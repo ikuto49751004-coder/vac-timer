@@ -143,32 +143,35 @@
     .table-actions {
       display: flex;
       gap: 8px;
-      margin-top: 12px;
+      margin-top: 16px;
     }
     .btn-save {
       background-color: #3182ce;
       color: #fff;
       border: none;
-      padding: 10px;
+      padding: 12px;
       border-radius: 6px;
       font-weight: bold;
       flex: 1;
       cursor: pointer;
+      font-size: 0.95rem;
     }
     .btn-clear {
       background-color: #e53e3e;
       color: #fff;
       border: none;
-      padding: 10px;
+      padding: 12px;
       border-radius: 6px;
       font-weight: bold;
       flex: 1;
       cursor: pointer;
+      font-size: 0.95rem;
     }
   </style>
 </head>
 <body>
 
+  <!-- 1. 工程選択 -->
   <div class="card">
     <h2>1. 工程を選択</h2>
     <div class="grid">
@@ -179,6 +182,7 @@
     </div>
   </div>
 
+  <!-- 2. オプション選択・編集 -->
   <div class="card">
     <h2>2. オプションを選択</h2>
     <select id="optionSelect">
@@ -195,6 +199,7 @@
     </details>
   </div>
 
+  <!-- 3. タイマー操作 -->
   <div class="card">
     <div class="timer-display" id="display">00:00:00</div>
     <div class="controls">
@@ -204,6 +209,7 @@
     </div>
   </div>
 
+  <!-- 4. 集計結果 & 保存・リセットボタン -->
   <div class="card">
     <h2>📊 オプション別 合計工数</h2>
     <table>
@@ -222,8 +228,8 @@
     </table>
 
     <div class="table-actions">
-      <button class="btn-save" onclick="exportCSV()">📁 CSVで保存 (ダウンロード)</button>
-      <button class="btn-clear" onclick="clearSummaryData()">🗑️ データをリセット</button>
+      <button class="btn-save" onclick="exportCSV()">📁 CSVで保存</button>
+      <button class="btn-clear" onclick="clearSummaryData()">🗑️ リセット</button>
     </div>
   </div>
 
@@ -243,7 +249,6 @@
       "整備": ["清掃", "注油"]
     };
 
-    // 初期化時にテーブルを描画
     window.onload = function() {
       renderSummaryTable();
     };
@@ -398,7 +403,6 @@
       });
     }
 
-    // CSVダウンロード保存
     function exportCSV() {
       if (Object.keys(optionSummary).length === 0) {
         alert("保存するデータがありません");
@@ -421,7 +425,6 @@
       URL.revokeObjectURL(url);
     }
 
-    // データリセット
     function clearSummaryData() {
       if (confirm("これまでの合計工数データをリセットしてもよろしいですか？")) {
         optionSummary = {};
