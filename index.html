@@ -126,7 +126,6 @@
       font-weight: bold;
       margin-top: 10px;
     }
-    /* 集計テーブルスタイル */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -138,8 +137,33 @@
       text-align: left;
       font-size: 0.9rem;
     }
-    th {
-      background-color: #edf2f7;
+    th { background-color: #edf2f7; }
+    
+    /* 保存・リセットボタン用 */
+    .table-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .btn-save {
+      background-color: #3182ce;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      flex: 1;
+      cursor: pointer;
+    }
+    .btn-clear {
+      background-color: #e53e3e;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: bold;
+      flex: 1;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -180,7 +204,6 @@
     </div>
   </div>
 
-  <!-- 集計結果エリア -->
   <div class="card">
     <h2>📊 オプション別 合計工数</h2>
     <table>
@@ -197,6 +220,11 @@
         </tr>
       </tbody>
     </table>
+
+    <div class="table-actions">
+      <button class="btn-save" onclick="exportCSV()">📁 CSVで保存 (ダウンロード)</button>
+      <button class="btn-clear" onclick="clearSummaryData()">🗑️ データをリセット</button>
+    </div>
   </div>
 
   <script>
@@ -205,8 +233,8 @@
     let isRunning = false;
     let selectedProcessName = "";
 
-    // オプション別データ保持オブジェクト { "内装": { totalSec: 120, processes: ["加工", "組み立て"] } }
-    const optionSummary = {};
+    // ローカルストレージから保存済みデータを復元
+    let optionSummary = JSON.parse(localStorage.getItem('vac_timer_summary')) || {};
 
     const optionsData = {
       "加工": ["内装", "バリ取り", "穴あけ"],
@@ -214,6 +242,15 @@
       "検査": ["外観チェック", "動作確認"],
       "整備": ["清掃", "注油"]
     };
+
+    // 初期化時にテーブルを描画
+    window.onload = function() {
+      renderSummaryTable();
+    };
+
+    function saveToStorage() {
+      localStorage.setItem('vac_timer_summary', JSON.stringify(optionSummary));
+    }
 
     function selectProcess(element, processName) {
       document.querySelectorAll('.grid .btn').forEach(b => b.classList.remove('selected'));
@@ -320,7 +357,6 @@
       const process = selectedProcessName || "未選択";
       const option = document.getElementById('optionSelect').value || "未選択";
 
-      // 合算ロジック
       if (!optionSummary[option]) {
         optionSummary[option] = { totalSec: 0, processes: [] };
       }
@@ -329,9 +365,9 @@
         optionSummary[option].processes.push(process);
       }
 
+      saveToStorage();
       renderSummaryTable();
 
-      // リセット
       seconds = 0;
       updateDisplay();
       document.getElementById('startBtn').disabled = false;
@@ -344,7 +380,13 @@
       const tbody = document.getElementById('summaryTableBody');
       tbody.innerHTML = '';
 
-      Object.keys(optionSummary).forEach(optKey => {
+      const keys = Object.keys(optionSummary);
+      if (keys.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#a0aec0;">計測データはまだありません</td></tr>';
+        return;
+      }
+
+      keys.forEach(optKey => {
         const item = optionSummary[optKey];
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -354,6 +396,38 @@
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    // CSVダウンロード保存
+    function exportCSV() {
+      if (Object.keys(optionSummary).length === 0) {
+        alert("保存するデータがありません");
+        return;
+      }
+
+      let csvContent = "\uFEFFオプション名,内訳（工程）,合計時間\n";
+      Object.keys(optionSummary).forEach(optKey => {
+        const item = optionSummary[optKey];
+        const processes = `"${item.processes.join(', ')}"`;
+        csvContent += `${optKey},${processes},${formatTime(item.totalSec)}\n`;
+      });
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `VAC工数計測結果_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // データリセット
+    function clearSummaryData() {
+      if (confirm("これまでの合計工数データをリセットしてもよろしいですか？")) {
+        optionSummary = {};
+        localStorage.removeItem('vac_timer_summary');
+        renderSummaryTable();
+      }
     }
   </script>
 </body>
