@@ -1,177 +1,360 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VAC オプション工数計測</title>
-    
-    <!-- PWA・ホーム画面アプリ化用の設定 -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="VAC計測">
-
-    <style>
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { padding: 20px; background: #f0f2f5; max-width: 800px; margin: 0 auto; color: #333; }
-        h1 { text-align: center; font-size: 1.8rem; margin-bottom: 20px; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .section-title { font-weight: bold; font-size: 1.2rem; margin-bottom: 10px; display: block; }
-        
-        /* 工程ボタン（タブレット用に大型化） */
-        .process-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-        .btn-proc { padding: 18px 10px; font-size: 1.2rem; border: 2px solid #ccc; border-radius: 8px; background: #fff; cursor: pointer; font-weight: bold; }
-        .btn-proc.active { background: #007bff; color: white; border-color: #007bff; }
-        
-        select, input { width: 100%; padding: 14px; font-size: 1.1rem; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 10px; }
-        
-        /* タイマー表示 */
-        .timer-display { font-size: 4rem; text-align: center; font-family: monospace; font-weight: bold; margin: 20px 0; color: #111; }
-        .btn-action { width: 100%; padding: 20px; font-size: 1.5rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
-        .btn-start { background: #28a745; color: white; }
-        .btn-stop { background: #dc3545; color: white; }
-        
-        /* テーブル表示 */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 1rem; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background: #f8f9fa; }
-        .btn-clear { background: #6c757d; color: white; padding: 8px 16px; border: none; border-radius: 4px; float: right; cursor: pointer; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAC オプション工数計測</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f4f5f7;
+      margin: 0;
+      padding: 16px;
+      color: #333;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    h2 {
+      font-size: 1.1rem;
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .btn {
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: bold;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      color: #2b6cb0;
+      cursor: pointer;
+    }
+    .btn.selected {
+      background: #3182ce;
+      color: #fff;
+      border-color: #3182ce;
+    }
+    select, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 0.95rem;
+    }
+    .add-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .add-group input { margin-top: 0; }
+    .btn-add {
+      background: #3182ce;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0 16px;
+      font-weight: bold;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .option-list {
+      margin-top: 12px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .option-item {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .option-item input { margin-top: 0; }
+    .btn-sm {
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-edit { background: #edf2f7; color: #2d3748; }
+    .btn-del { background: #fed7d7; color: #9b2c2c; }
+    .timer-display {
+      font-size: 2.8rem;
+      font-weight: bold;
+      text-align: center;
+      margin: 16px 0;
+      font-family: monospace;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-action {
+      flex: 1;
+      padding: 14px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+    }
+    .btn-start { background-color: #38a169; }
+    .btn-pause { background-color: #dd6b20; }
+    .btn-stop { background-color: #e53e3e; }
+    .btn-action:disabled {
+      background-color: #cbd5e0;
+      cursor: not-allowed;
+    }
+    details summary {
+      cursor: pointer;
+      color: #4a5568;
+      font-size: 0.9rem;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    /* 集計テーブルスタイル */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 10px;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    th {
+      background-color: #edf2f7;
+    }
+  </style>
 </head>
 <body>
 
-<h1>VAC オプション工数計測</h1>
-
-<!-- 1. 工程＆オプション選択 -->
-<div class="card">
-    <span class="section-title">1. 工程を選択</span>
-    <div class="process-grid">
-        <button type="button" class="btn-proc" onclick="selectProcess('加工', this)">加工</button>
-        <button type="button" class="btn-proc" onclick="selectProcess('組み立て', this)">組み立て</button>
-        <button type="button" class="btn-proc" onclick="selectProcess('検査', this)">検査</button>
-        <button type="button" class="btn-proc" onclick="selectProcess('整備', this)">整備</button>
+  <div class="card">
+    <h2>1. 工程を選択</h2>
+    <div class="grid">
+      <button class="btn" onclick="selectProcess(this, '加工')">加工</button>
+      <button class="btn" onclick="selectProcess(this, '組み立て')">組み立て</button>
+      <button class="btn" onclick="selectProcess(this, '検査')">検査</button>
+      <button class="btn" onclick="selectProcess(this, '整備')">整備</button>
     </div>
+  </div>
 
-    <span class="section-title">2. オプションを選択（または入力）</span>
+  <div class="card">
+    <h2>2. オプションを選択</h2>
     <select id="optionSelect">
-        <option value="">-- 先に工程を選択してください --</option>
+      <option value="">-- 先に工程を選択してください --</option>
     </select>
-    <input type="text" id="customOption" placeholder="一覧にない場合は直接入力">
-</div>
 
-<!-- 2. タイマー機能 -->
-<div class="card">
-    <div class="timer-display" id="timer">00:00:00</div>
-    <button id="startBtn" class="btn-action btn-start" onclick="startTimer()">スタート</button>
-    <button id="stopBtn" class="btn-action btn-stop" onclick="stopTimer()" style="display:none;">終了（記録）</button>
-</div>
+    <details id="manageArea" style="display: none;">
+      <summary>⚙️ オプションの追加・編集</summary>
+      <div class="add-group">
+        <input type="text" id="newOptionInput" placeholder="新しいオプション名">
+        <button class="btn-add" onclick="addOption()">追加</button>
+      </div>
+      <div class="option-list" id="optionEditList"></div>
+    </details>
+  </div>
 
-<!-- 3. 履歴表示 -->
-<div class="card">
-    <span class="section-title">
-        計測結果一覧
-        <button class="btn-clear" onclick="clearLogs()">履歴消去</button>
-    </span>
-    <table id="logTable">
-        <thead>
-            <tr>
-                <th>工程</th>
-                <th>オプション</th>
-                <th>計測時間</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
+  <div class="card">
+    <div class="timer-display" id="display">00:00:00</div>
+    <div class="controls">
+      <button id="startBtn" class="btn-action btn-start" onclick="startTimer()">スタート</button>
+      <button id="pauseBtn" class="btn-action btn-pause" onclick="pauseTimer()" disabled>一時停止</button>
+      <button id="stopBtn" class="btn-action btn-stop" onclick="stopTimer()" disabled>計測終了</button>
+    </div>
+  </div>
+
+  <!-- 集計結果エリア -->
+  <div class="card">
+    <h2>📊 オプション別 合計工数</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>オプション名</th>
+          <th>内訳（工程）</th>
+          <th>合計時間</th>
+        </tr>
+      </thead>
+      <tbody id="summaryTableBody">
+        <tr>
+          <td colspan="3" style="text-align:center; color:#a0aec0;">計測データはまだありません</td>
+        </tr>
+      </tbody>
     </table>
-</div>
+  </div>
 
-<script>
-    // オプション一覧データ（必要に応じて名称を変更・追加してください）
+  <script>
+    let timer;
+    let seconds = 0;
+    let isRunning = false;
+    let selectedProcessName = "";
+
+    // オプション別データ保持オブジェクト { "内装": { totalSec: 120, processes: ["加工", "組み立て"] } }
+    const optionSummary = {};
+
     const optionsData = {
-        '加工': ['標準加工', '追加穴あけ', '表面処理', 'バリ取り'],
-        '組み立て': ['メインユニット組立', '配線オプション', 'センサー取付', 'ブラケット追加'],
-        '検査': ['外観検査', '動作確認', '耐圧試験', '出荷前検査'],
-        '整備': ['定期整備', '部品交換', 'グリスアップ', '清掃']
+      "加工": ["内装", "バリ取り", "穴あけ"],
+      "組み立て": ["内装", "パーツ固定", "ネジ締め"],
+      "検査": ["外観チェック", "動作確認"],
+      "整備": ["清掃", "注油"]
     };
 
-    let selectedProcess = '';
-    let timerInterval = null;
-    let startTime = 0;
+    function selectProcess(element, processName) {
+      document.querySelectorAll('.grid .btn').forEach(b => b.classList.remove('selected'));
+      element.classList.add('selected');
+      selectedProcessName = processName;
 
-    function selectProcess(processName, element) {
-        selectedProcess = processName;
-        
-        // ボタン選択時の見た目切り替え
-        document.querySelectorAll('.btn-proc').forEach(btn => btn.classList.remove('active'));
-        element.classList.add('active');
+      document.getElementById('manageArea').style.display = 'block';
+      renderOptions();
+    }
 
-        // オプション選択肢の更新
-        const select = document.getElementById('optionSelect');
-        select.innerHTML = '<option value="">-- オプションを選択 --</option>';
-        
-        if (optionsData[processName]) {
-            optionsData[processName].forEach(opt => {
-                const option = document.createElement('option');
-                option.value = opt;
-                option.textContent = opt;
-                select.appendChild(option);
-            });
-        }
+    function renderOptions() {
+      if (!selectedProcessName) return;
+
+      const select = document.getElementById('optionSelect');
+      const editList = document.getElementById('optionEditList');
+      const list = optionsData[selectedProcessName] || [];
+
+      select.innerHTML = '<option value="">-- オプションを選択 --</option>';
+      list.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt;
+        option.textContent = opt;
+        select.appendChild(option);
+      });
+
+      editList.innerHTML = '';
+      list.forEach((opt, index) => {
+        const div = document.createElement('div');
+        div.className = 'option-item';
+        div.innerHTML = `
+          <input type="text" value="${opt}" id="edit-opt-${index}">
+          <button class="btn-sm btn-edit" onclick="updateOption(${index})">保存</button>
+          <button class="btn-sm btn-del" onclick="deleteOption(${index})">削除</button>
+        `;
+        editList.appendChild(div);
+      });
+    }
+
+    function addOption() {
+      const input = document.getElementById('newOptionInput');
+      const val = input.value.trim();
+      if (!val || !selectedProcessName) return;
+
+      optionsData[selectedProcessName].push(val);
+      input.value = '';
+      renderOptions();
+    }
+
+    function updateOption(index) {
+      const input = document.getElementById(`edit-opt-${index}`);
+      const val = input.value.trim();
+      if (!val || !selectedProcessName) return;
+
+      optionsData[selectedProcessName][index] = val;
+      renderOptions();
+    }
+
+    function deleteOption(index) {
+      if (!selectedProcessName) return;
+      optionsData[selectedProcessName].splice(index, 1);
+      renderOptions();
+    }
+
+    function formatTime(sec) {
+      const hrs = String(Math.floor(sec / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+      const secs = String(sec % 60).padStart(2, '0');
+      return `${hrs}:${mins}:${secs}`;
+    }
+
+    function updateDisplay() {
+      document.getElementById('display').textContent = formatTime(seconds);
     }
 
     function startTimer() {
-        const optionSelect = document.getElementById('optionSelect').value;
-        const customOption = document.getElementById('customOption').value;
-        const optionName = customOption || optionSelect;
+      if (!isRunning) {
+        isRunning = true;
+        timer = setInterval(() => {
+          seconds++;
+          updateDisplay();
+        }, 1000);
 
-        if (!selectedProcess) {
-            alert('工程を選択してください');
-            return;
-        }
-        if (!optionName) {
-            alert('オプションを選択または入力してください');
-            return;
-        }
-
-        startTime = Date.now();
-        timerInterval = setInterval(updateTimer, 1000);
-
-        document.getElementById('startBtn').style.display = 'none';
-        document.getElementById('stopBtn').style.display = 'block';
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('pauseBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = false;
+      }
     }
 
-    function updateTimer() {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const hours = String(Math.floor(elapsed / 3600)).padStart(2, '0');
-        const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
-        const seconds = String(elapsed % 60).padStart(2, '0');
-        document.getElementById('timer').innerText = `${hours}:${minutes}:${seconds}`;
+    function pauseTimer() {
+      if (isRunning) {
+        isRunning = false;
+        clearInterval(timer);
+
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('startBtn').textContent = '再開';
+        document.getElementById('pauseBtn').disabled = true;
+      }
     }
 
     function stopTimer() {
-        clearInterval(timerInterval);
-        const duration = document.getElementById('timer').innerText;
-        
-        const optionSelect = document.getElementById('optionSelect').value;
-        const customOption = document.getElementById('customOption').value;
-        const optionName = customOption || optionSelect;
+      isRunning = false;
+      clearInterval(timer);
 
-        // 履歴テーブルに追加
-        const tableBody = document.querySelector('#logTable tbody');
-        const row = document.createElement('tr');
-        row.innerHTML = `<td><b>${selectedProcess}</b></td><td>${optionName}</td><td><b>${duration}</b></td>`;
-        tableBody.prepend(row);
+      const process = selectedProcessName || "未選択";
+      const option = document.getElementById('optionSelect').value || "未選択";
 
-        // タイマーリセット
-        document.getElementById('startBtn').style.display = 'block';
-        document.getElementById('stopBtn').style.display = 'none';
-        document.getElementById('timer').innerText = '00:00:00';
+      // 合算ロジック
+      if (!optionSummary[option]) {
+        optionSummary[option] = { totalSec: 0, processes: [] };
+      }
+      optionSummary[option].totalSec += seconds;
+      if (!optionSummary[option].processes.includes(process)) {
+        optionSummary[option].processes.push(process);
+      }
+
+      renderSummaryTable();
+
+      // リセット
+      seconds = 0;
+      updateDisplay();
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('startBtn').textContent = 'スタート';
+      document.getElementById('pauseBtn').disabled = true;
+      document.getElementById('stopBtn').disabled = true;
     }
 
-    function clearLogs() {
-        if(confirm('計測履歴をクリアしますか？')) {
-            document.querySelector('#logTable tbody').innerHTML = '';
-        }
-    }
-</script>
+    function renderSummaryTable() {
+      const tbody = document.getElementById('summaryTableBody');
+      tbody.innerHTML = '';
 
+      Object.keys(optionSummary).forEach(optKey => {
+        const item = optionSummary[optKey];
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${optKey}</strong></td>
+          <td>${item.processes.join(', ')}</td>
+          <td><strong>${formatTime(item.totalSec)}</strong></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
 </body>
 </html>
