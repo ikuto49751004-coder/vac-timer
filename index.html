@@ -100,21 +100,30 @@
     }
     .controls {
       display: flex;
-      gap: 8px;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .sub-controls {
+      display: flex;
+      gap: 6px;
     }
     .btn-action {
       flex: 1;
-      padding: 14px;
-      font-size: 1.1rem;
+      padding: 12px 6px;
+      font-size: 0.95rem;
       font-weight: bold;
       border: none;
       border-radius: 8px;
       color: #fff;
       cursor: pointer;
+      text-align: center;
     }
     .btn-start { background-color: #38a169; }
     .btn-pause { background-color: #dd6b20; }
     .btn-stop { background-color: #e53e3e; }
+    .btn-save { background-color: #3182ce; }
+    .btn-clear { background-color: #718096; }
+    
     .btn-action:disabled {
       background-color: #cbd5e0;
       cursor: not-allowed;
@@ -138,35 +147,6 @@
       font-size: 0.9rem;
     }
     th { background-color: #edf2f7; }
-    
-    /* 保存・リセットボタン用 */
-    .table-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 16px;
-    }
-    .btn-save {
-      background-color: #3182ce;
-      color: #fff;
-      border: none;
-      padding: 12px;
-      border-radius: 6px;
-      font-weight: bold;
-      flex: 1;
-      cursor: pointer;
-      font-size: 0.95rem;
-    }
-    .btn-clear {
-      background-color: #e53e3e;
-      color: #fff;
-      border: none;
-      padding: 12px;
-      border-radius: 6px;
-      font-weight: bold;
-      flex: 1;
-      cursor: pointer;
-      font-size: 0.95rem;
-    }
   </style>
 </head>
 <body>
@@ -199,17 +179,25 @@
     </details>
   </div>
 
-  <!-- 3. タイマー操作 -->
+  <!-- 3. タイマー操作 & 集計ボタン群 -->
   <div class="card">
     <div class="timer-display" id="display">00:00:00</div>
+    
+    <!-- メイン操作ボタン（計測用） -->
     <div class="controls">
       <button id="startBtn" class="btn-action btn-start" onclick="startTimer()">スタート</button>
       <button id="pauseBtn" class="btn-action btn-pause" onclick="pauseTimer()" disabled>一時停止</button>
       <button id="stopBtn" class="btn-action btn-stop" onclick="stopTimer()" disabled>計測終了</button>
     </div>
+
+    <!-- サブ操作ボタン（保存・リセット用） -->
+    <div class="sub-controls">
+      <button class="btn-action btn-save" onclick="exportCSV()">📁 保存 (CSV)</button>
+      <button class="btn-action btn-clear" onclick="clearSummaryData()">🗑️ 全リセット</button>
+    </div>
   </div>
 
-  <!-- 4. 集計結果 & 保存・リセットボタン -->
+  <!-- 4. 集計結果一覧 -->
   <div class="card">
     <h2>📊 オプション別 合計工数</h2>
     <table>
@@ -226,11 +214,6 @@
         </tr>
       </tbody>
     </table>
-
-    <div class="table-actions">
-      <button class="btn-save" onclick="exportCSV()">📁 CSVで保存</button>
-      <button class="btn-clear" onclick="clearSummaryData()">🗑️ リセット</button>
-    </div>
   </div>
 
   <script>
@@ -239,7 +222,6 @@
     let isRunning = false;
     let selectedProcessName = "";
 
-    // ローカルストレージから保存済みデータを復元
     let optionSummary = JSON.parse(localStorage.getItem('vac_timer_summary')) || {};
 
     const optionsData = {
@@ -426,7 +408,7 @@
     }
 
     function clearSummaryData() {
-      if (confirm("これまでの合計工数データをリセットしてもよろしいですか？")) {
+      if (confirm("これまでの合計工数データをすべてリセットしてもよろしいですか？")) {
         optionSummary = {};
         localStorage.removeItem('vac_timer_summary');
         renderSummaryTable();
