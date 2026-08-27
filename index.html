@@ -38,16 +38,6 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 8px;
     }
-    .model-input-container {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .model-prefix {
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #2b6cb0;
-    }
     .btn {
       padding: 10px 4px;
       font-size: 0.9rem;
@@ -224,12 +214,13 @@
 </head>
 <body>
 
-  <!-- 1. 機種入力（VAC-〇〇〇） -->
+  <!-- 1. 機種選択（VAC-101 / VAC-201 / VAC-301） -->
   <div class="card">
-    <h2>1. 機種を入力 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
-    <div class="model-input-container">
-      <span class="model-prefix">VAC-</span>
-      <input type="number" id="modelNumberInput" placeholder="数字を入力 (例: 100)" style="margin-top:0;">
+    <h2>1. 機種を選択 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
+    <div class="grid-3" id="modelGroup">
+      <button class="btn" onclick="selectModel(this, 'VAC-101')">VAC-101</button>
+      <button class="btn" onclick="selectModel(this, 'VAC-201')">VAC-201</button>
+      <button class="btn" onclick="selectModel(this, 'VAC-301')">VAC-301</button>
     </div>
   </div>
 
@@ -354,6 +345,7 @@
     let seconds = 0;
     let isRunning = false;
     
+    let selectedModelName = "";
     let selectedSpecTypes = [];
     let selectedProcessName = "";
 
@@ -374,9 +366,11 @@
       localStorage.setItem('vac_timer_records_v1', JSON.stringify(timerRecords));
     }
 
-    function getSelectedModel() {
-      const num = document.getElementById('modelNumberInput').value.trim();
-      return num ? `VAC-${num}` : "";
+    // 機種 単一選択
+    function selectModel(element, modelName) {
+      document.querySelectorAll('#modelGroup .btn').forEach(b => b.classList.remove('selected'));
+      element.classList.add('selected');
+      selectedModelName = modelName;
     }
 
     function toggleSpecType(element, specType) {
@@ -424,7 +418,7 @@
       if (list.length === 0) {
         boxList.innerHTML = '<span style="color: #a0aec0; font-size: 0.85rem;">項目がありません。下から追加してください。</span>';
       } else {
-        list.forEach((opt, idx) => {
+        list.forEach((opt) => {
           const label = document.createElement('label');
           label.className = 'checkbox-item';
           label.innerHTML = `
@@ -495,10 +489,9 @@
     function startTimer() {
       if (!isRunning) {
         const missing = [];
-        const currentModel = getSelectedModel();
         const selectedOpts = getSelectedOptions();
 
-        if (!currentModel) missing.push("1. 機種 (VAC-の後の数字)");
+        if (!selectedModelName) missing.push("1. 機種 (101 / 201 / 301)");
         if (selectedSpecTypes.length === 0) missing.push("2. 仕様区分 (1つ以上選択)");
         if (!selectedProcessName) missing.push("3. 工程");
         if (selectedOpts.length === 0) missing.push("4. 作業項目 (1つ以上チェック)");
@@ -535,7 +528,7 @@
       isRunning = false;
       clearInterval(timer);
 
-      const model = getSelectedModel();
+      const model = selectedModelName;
       const specTypes = [...selectedSpecTypes];
       const process = selectedProcessName;
       const selectedOpts = getSelectedOptions();
