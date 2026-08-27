@@ -185,7 +185,7 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 8px;
-      min-width: 500px;
+      min-width: 650px;
     }
     th, td {
       border: 1px solid #e2e8f0;
@@ -331,16 +331,18 @@
         <thead>
           <tr>
             <th>機種</th>
-            <th>区分</th>
             <th>工程</th>
             <th>作業項目</th>
             <th>個数</th>
-            <th>時間</th>
+            <th>標準</th>
+            <th>オプション</th>
+            <th>付加仕様</th>
+            <th>計測時間</th>
           </tr>
         </thead>
         <tbody id="summaryTableBody">
           <tr>
-            <td colspan="6" style="text-align:center; color:#a0aec0;">計測データはまだありません</td>
+            <td colspan="8" style="text-align:center; color:#a0aec0;">計測データはまだありません</td>
           </tr>
         </tbody>
       </table>
@@ -377,7 +379,6 @@
       return num ? `VAC-${num}` : "";
     }
 
-    // 仕様区分 複数選択
     function toggleSpecType(element, specType) {
       element.classList.toggle('selected');
       if (selectedSpecTypes.includes(specType)) {
@@ -387,7 +388,6 @@
       }
     }
 
-    // 工程 単一選択
     function selectProcess(element, processName) {
       document.querySelectorAll('#processGroup .btn').forEach(b => b.classList.remove('selected'));
       element.classList.add('selected');
@@ -413,7 +413,6 @@
       }
     }
 
-    // 作業項目 チェックボックス描画
     function renderOptions() {
       if (!selectedProcessName) return;
 
@@ -553,7 +552,6 @@
 
       timerRecords.push({
         model: model,
-        specType: specTypes.join('・'),
         specTypesArray: specTypes,
         process: process,
         option: selectedOpts.join('・'),
@@ -582,23 +580,34 @@
       let secExtra = 0;
 
       if (timerRecords.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#a0aec0;">計測データはまだありません</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#a0aec0;">計測データはまだありません</td></tr>';
       } else {
         timerRecords.slice().reverse().forEach(item => {
+          const arr = item.specTypesArray || [];
+          const isStd = arr.includes('標準');
+          const isOpt = arr.includes('オプション');
+          const isExt = arr.includes('付加仕様');
+
+          const stdText = isStd ? item.timeStr : "-";
+          const optText = isOpt ? item.timeStr : "-";
+          const extText = isExt ? item.timeStr : "-";
+
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${item.model}</td>
-            <td>${item.specType}</td>
             <td>${item.process}</td>
             <td><strong>${item.option}</strong></td>
             <td>${item.qty}</td>
+            <td style="color: ${isStd ? '#2b6cb0' : '#a0aec0'};">${stdText}</td>
+            <td style="color: ${isOpt ? '#2b6cb0' : '#a0aec0'};">${optText}</td>
+            <td style="color: ${isExt ? '#2b6cb0' : '#a0aec0'};">${extText}</td>
             <td><strong>${item.timeStr}</strong></td>
           `;
           tbody.appendChild(tr);
         });
 
         timerRecords.forEach(item => {
-          const arr = item.specTypesArray || (item.specType ? item.specType.split('・') : []);
+          const arr = item.specTypesArray || [];
           if (arr.includes('標準')) secStandard += item.duration;
           if (arr.includes('オプション')) secOption += item.duration;
           if (arr.includes('付加仕様')) secExtra += item.duration;
@@ -621,16 +630,21 @@
       let secExtra = 0;
 
       timerRecords.forEach(item => {
-        const arr = item.specTypesArray || (item.specType ? item.specType.split('・') : []);
+        const arr = item.specTypesArray || [];
         if (arr.includes('標準')) secStandard += item.duration;
         if (arr.includes('オプション')) secOption += item.duration;
         if (arr.includes('付加仕様')) secExtra += item.duration;
       });
 
       let csvContent = "\uFEFF【VAC 個別計測履歴】\n";
-      csvContent += "機種,仕様区分,工程,作業項目,個数,作業時間\n";
+      csvContent += "機種,工程,作業項目,個数,標準時間,オプション時間,付加仕様時間,計測時間\n";
       timerRecords.forEach(item => {
-        csvContent += `"${item.model}","${item.specType}","${item.process}","${item.option}","${item.qty}","${item.timeStr}"\n`;
+        const arr = item.specTypesArray || [];
+        const stdText = arr.includes('標準') ? item.timeStr : "";
+        const optText = arr.includes('オプション') ? item.timeStr : "";
+        const extText = arr.includes('付加仕様') ? item.timeStr : "";
+
+        csvContent += `"${item.model}","${item.process}","${item.option}","${item.qty}","${stdText}","${optText}","${extText}","${item.timeStr}"\n`;
       });
 
       csvContent += "\n【仕様区分別 合計時間】\n";
