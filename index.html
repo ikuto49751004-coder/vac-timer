@@ -29,7 +29,7 @@
       margin-top: 0;
       margin-bottom: 12px;
     }
-    .grid-5 {
+    .grid-4 {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 8px;
@@ -212,15 +212,14 @@
     </div>
   </div>
 
-  <!-- 3. 工程選択 -->
+  <!-- 3. 工程選択（冷凍機を除外） -->
   <div class="card">
     <h2>3. 工程を選択</h2>
-    <div class="grid-5" id="processGroup">
-      <button class="btn" onclick="selectProcess(this, '冷凍機')">冷凍機</button>
+    <div class="grid-4" id="processGroup">
       <button class="btn" onclick="selectProcess(this, '加工')">加工</button>
       <button class="btn" onclick="selectProcess(this, '組み立て')">組み立て</button>
       <button class="btn" onclick="selectProcess(this, '検査')">検査</button>
-      <button class="btn" style="grid-column: span 2;" onclick="selectProcess(this, '整備')">整備</button>
+      <button class="btn" onclick="selectProcess(this, '整備')">整備</button>
     </div>
   </div>
 
@@ -327,15 +326,14 @@
     let selectedSpecType = "";
     let selectedProcessName = "";
 
-    // VAC用データ保存（ライトスペックと混ざらないように別キー名）
+    // VAC用データ保存
     let timerRecords = JSON.parse(localStorage.getItem('vac_timer_records_v4')) || [];
 
-    // 初期オプションデータ
+    // 初期オプションデータ（冷凍機を除外）
     const optionsData = {
-      "冷凍機": ["ユニット取り付け", "配管接続", "冷媒ガス充填"],
       "加工": ["内装加工", "バリ取り", "穴あけ"],
       "組み立て": ["パネル取付", "パーツ固定", "ネジ締め"],
-      "検査": ["冷却テスト", "外観チェック", "動作確認"],
+      "検査": ["外観チェック", "動作確認"],
       "整備": ["清掃", "点検", "注油"]
     };
 
@@ -418,6 +416,9 @@
       const val = input.value.trim();
       if (!val || !selectedProcessName) return;
 
+      if (!optionsData[selectedProcessName]) {
+        optionsData[selectedProcessName] = [];
+      }
       optionsData[selectedProcessName].push(val);
       input.value = '';
       renderOptions();
