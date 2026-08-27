@@ -219,14 +219,14 @@
     </div>
   </div>
 
-  <!-- 3. 工程選択 -->
+  <!-- 3. 工程選択（複数選択可能） -->
   <div class="card">
-    <h2>3. 工程を選択 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
+    <h2>3. 工程を選択（複数可） <span style="color: red; font-size: 0.8rem;">*1つ以上必須</span></h2>
     <div class="grid-4" id="processGroup">
-      <button class="btn" onclick="selectProcess(this, '加工')">加工</button>
-      <button class="btn" onclick="selectProcess(this, '組み立て')">組み立て</button>
-      <button class="btn" onclick="selectProcess(this, '検査')">検査</button>
-      <button class="btn" onclick="selectProcess(this, '整備')">整備</button>
+      <button class="btn" onclick="toggleProcess(this, '加工')">加工</button>
+      <button class="btn" onclick="toggleProcess(this, '組み立て')">組み立て</button>
+      <button class="btn" onclick="toggleProcess(this, '検査')">検査</button>
+      <button class="btn" onclick="toggleProcess(this, '整備')">整備</button>
     </div>
   </div>
 
@@ -259,6 +259,10 @@
 
     <details id="manageArea" style="display: none; margin-top: 12px;">
       <summary>⚙️ 作業項目の追加・編集</summary>
+      <div style="margin-top: 8px;">
+        <label style="font-size: 0.8rem; font-weight: bold; color: #4a5568;">追加先の工程を選択:</label>
+        <select id="addProcessTarget" style="margin-top: 4px; margin-bottom: 6px;"></select>
+      </div>
       <div class="add-group">
         <input type="text" id="newOptionInput" placeholder="新しい項目名">
         <button class="btn-add" onclick="addOption()">追加</button>
@@ -329,7 +333,7 @@
     let isRunning = false;
     
     let selectedSpecTypes = [];
-    let selectedProcessName = "";
+    let selectedProcesses = [];
 
     let timerRecords = JSON.parse(localStorage.getItem('vac_timer_records_v1')) || [];
 
@@ -353,7 +357,7 @@
       return num ? `VAC-${num}` : "";
     }
 
-    // 複数選択用のトグル処理
+    // 仕様区分 複数選択
     function toggleSpecType(element, specType) {
       element.classList.toggle('selected');
       if (selectedSpecTypes.includes(specType)) {
@@ -363,19 +367,28 @@
       }
     }
 
-    function selectProcess(element, processName) {
-      document.querySelectorAll('#processGroup .btn').forEach(b => b.classList.remove('selected'));
-      element.classList.add('selected');
-      selectedProcessName = processName;
+    // 工程 複数選択
+    function toggleProcess(element, processName) {
+      element.classList.toggle('selected');
+      if (selectedProcesses.includes(processName)) {
+        selectedProcesses = selectedProcesses.filter(p => p !== processName);
+      } else {
+        selectedProcesses.push(processName);
+      }
 
       const qtyContainer = document.getElementById('qtyContainer');
-      if (processName === '加工' || processName === '整備') {
+      if (selectedProcesses.includes('加工') || selectedProcesses.includes('整備')) {
         qtyContainer.style.display = 'block';
       } else {
         qtyContainer.style.display = 'none';
       }
 
-      document.getElementById('manageArea').style.display = 'block';
+      if (selectedProcesses.length > 0) {
+        document.getElementById('manageArea').style.display = 'block';
+      } else {
+        document.getElementById('manageArea').style.display = 'none';
+      }
+
       renderOptions();
     }
 
@@ -389,58 +402,81 @@
     }
 
     function renderOptions() {
-      if (!selectedProcessName) return;
-
       const select = document.getElementById('optionSelect');
       const editList = document.getElementById('optionEditList');
-      const list = optionsData[selectedProcessName] || [];
+      const addTargetSelect = document.getElementById('addProcessTarget');
+
+      if (selectedProcesses.length === 0) {
+        select.innerHTML = '<option value="">-- 先に工程を選択してください --</option>';
+        editList.innerHTML = '';
+        addTargetSelect.innerHTML = '';
+        return;
+      }
 
       select.innerHTML = '<option value="">-- 作業項目を選択 --</option>';
-      list.forEach(opt => {
-        const option = document.createElement('option');
-        option.value = opt;
-        option.textContent = opt;
-        select.appendChild(option);
+      addTargetSelect.innerHTML = '';
+
+      let combinedOptions = [];
+
+      selectedProcesses.forEach(proc => {
+        const targetOpt = document.createElement('option');
+        targetOpt.value = proc;
+        targetOpt.textContent = proc;
+        addTargetSelect.appendChild(targetOpt);
+
+        const list = optionsData[proc] || [];
+        list.forEach(opt => {
+          combinedOptions.push({ process: proc, name: opt });
+          const option = document.createElement('option');
+          option.value = `${proc}: ${opt}`;
+          option.textContent = selectedProcesses.length > 1 ? `[${proc}] ${opt}` : opt;
+          select.appendChild(option);
+        });
       });
 
       editList.innerHTML = '';
-      list.forEach((opt, index) => {
+      combinedOptions.forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'option-item';
         div.innerHTML = `
-          <input type="text" value="${opt}" id="edit-opt-${index}">
-          <button class="btn-sm btn-edit" onclick="updateOption(${index})">保存</button>
-          <button class="btn-sm btn-del" onclick="deleteOption(${index})">削除</button>
+          <span style="font-size:0.75rem; color:#718096; white-space:nowrap;">[${item.process}]</span>
+          <input type="text" value="${item.name}" id="edit-opt-${index}">
+          <button class="btn-sm btn-edit" onclick="updateOption('${item.process}', '${item.name}', ${index})">保存</button>
+          <button class="btn-sm btn-del" onclick="deleteOption('${item.process}', '${item.name}')">削除</button>
         `;
         editList.appendChild(div);
       });
     }
 
     function addOption() {
+      const targetProc = document.getElementById('addProcessTarget').value;
       const input = document.getElementById('newOptionInput');
       const val = input.value.trim();
-      if (!val || !selectedProcessName) return;
+      if (!val || !targetProc) return;
 
-      if (!optionsData[selectedProcessName]) {
-        optionsData[selectedProcessName] = [];
+      if (!optionsData[targetProc]) {
+        optionsData[targetProc] = [];
       }
-      optionsData[selectedProcessName].push(val);
+      optionsData[targetProc].push(val);
       input.value = '';
       renderOptions();
     }
 
-    function updateOption(index) {
+    function updateOption(proc, oldVal, index) {
       const input = document.getElementById(`edit-opt-${index}`);
       const val = input.value.trim();
-      if (!val || !selectedProcessName) return;
+      if (!val || !proc) return;
 
-      optionsData[selectedProcessName][index] = val;
+      const idx = optionsData[proc].indexOf(oldVal);
+      if (idx !== -1) {
+        optionsData[proc][idx] = val;
+      }
       renderOptions();
     }
 
-    function deleteOption(index) {
-      if (!selectedProcessName) return;
-      optionsData[selectedProcessName].splice(index, 1);
+    function deleteOption(proc, val) {
+      if (!proc || !optionsData[proc]) return;
+      optionsData[proc] = optionsData[proc].filter(item => item !== val);
       renderOptions();
     }
 
@@ -462,7 +498,7 @@
 
         if (!currentModel) missing.push("1. 機種 (VAC-の後の数字)");
         if (selectedSpecTypes.length === 0) missing.push("2. 仕様区分 (1つ以上選択)");
-        if (!selectedProcessName) missing.push("3. 工程");
+        if (selectedProcesses.length === 0) missing.push("3. 工程 (1つ以上選択)");
         
         const selectedOption = document.getElementById('optionSelect').value;
         if (!selectedOption) missing.push("4. 作業項目");
@@ -501,11 +537,11 @@
 
       const model = getSelectedModel();
       const specTypes = [...selectedSpecTypes];
-      const process = selectedProcessName;
+      const processes = [...selectedProcesses];
       const option = document.getElementById('optionSelect').value;
 
       let qty = "-";
-      if (process === '加工' || process === '整備') {
+      if (processes.includes('加工') || processes.includes('整備')) {
         const qtyVal = document.getElementById('qtySelect').value;
         if (qtyVal === 'custom') {
           qty = (document.getElementById('customQtyInput').value || "1") + "個";
@@ -518,7 +554,7 @@
         model: model,
         specType: specTypes.join('・'),
         specTypesArray: specTypes,
-        process: process,
+        process: processes.join('・'),
         option: option,
         qty: qty,
         duration: seconds,
