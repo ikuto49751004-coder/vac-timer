@@ -72,6 +72,30 @@
       box-sizing: border-box;
       font-size: 0.95rem;
     }
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+      max-height: 180px;
+      overflow-y: auto;
+      border: 1px solid #e2e8f0;
+      padding: 10px;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    .checkbox-item input[type="checkbox"] {
+      width: auto;
+      margin-top: 0;
+      transform: scale(1.2);
+    }
     .add-group {
       display: flex;
       gap: 8px;
@@ -90,7 +114,7 @@
     }
     .option-list {
       margin-top: 12px;
-      max-height: 180px;
+      max-height: 150px;
       overflow-y: auto;
     }
     .option-item {
@@ -219,25 +243,25 @@
     </div>
   </div>
 
-  <!-- 3. 工程選択（複数選択可能） -->
+  <!-- 3. 工程選択（1つ選択） -->
   <div class="card">
-    <h2>3. 工程を選択（複数可） <span style="color: red; font-size: 0.8rem;">*1つ以上必須</span></h2>
+    <h2>3. 工程を選択 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
     <div class="grid-4" id="processGroup">
-      <button class="btn" onclick="toggleProcess(this, '加工')">加工</button>
-      <button class="btn" onclick="toggleProcess(this, '組み立て')">組み立て</button>
-      <button class="btn" onclick="toggleProcess(this, '検査')">検査</button>
-      <button class="btn" onclick="toggleProcess(this, '整備')">整備</button>
+      <button class="btn" onclick="selectProcess(this, '加工')">加工</button>
+      <button class="btn" onclick="selectProcess(this, '組み立て')">組み立て</button>
+      <button class="btn" onclick="selectProcess(this, '検査')">検査</button>
+      <button class="btn" onclick="selectProcess(this, '整備')">整備</button>
     </div>
   </div>
 
-  <!-- 4. 詳細項目 & 個数選択 -->
+  <!-- 4. 詳細項目（複数選択可能） & 個数選択 -->
   <div class="card">
-    <h2>4. 詳細項目・個数を設定 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
+    <h2>4. 詳細項目（複数可）・個数を設定 <span style="color: red; font-size: 0.8rem;">*1つ以上必須</span></h2>
     
     <label style="font-size: 0.85rem; font-weight: bold;">作業項目:</label>
-    <select id="optionSelect">
-      <option value="">-- 先に工程を選択してください --</option>
-    </select>
+    <div class="checkbox-group" id="optionCheckboxList">
+      <span style="color: #a0aec0; font-size: 0.85rem;">-- 先に工程を選択してください --</span>
+    </div>
 
     <div id="qtyContainer" style="display: none; margin-top: 12px;">
       <label style="font-size: 0.85rem; font-weight: bold; color: #2b6cb0;">個数:</label>
@@ -259,10 +283,6 @@
 
     <details id="manageArea" style="display: none; margin-top: 12px;">
       <summary>⚙️ 作業項目の追加・編集</summary>
-      <div style="margin-top: 8px;">
-        <label style="font-size: 0.8rem; font-weight: bold; color: #4a5568;">追加先の工程を選択:</label>
-        <select id="addProcessTarget" style="margin-top: 4px; margin-bottom: 6px;"></select>
-      </div>
       <div class="add-group">
         <input type="text" id="newOptionInput" placeholder="新しい項目名">
         <button class="btn-add" onclick="addOption()">追加</button>
@@ -333,7 +353,7 @@
     let isRunning = false;
     
     let selectedSpecTypes = [];
-    let selectedProcesses = [];
+    let selectedProcessName = "";
 
     let timerRecords = JSON.parse(localStorage.getItem('vac_timer_records_v1')) || [];
 
@@ -367,28 +387,20 @@
       }
     }
 
-    // 工程 複数選択
-    function toggleProcess(element, processName) {
-      element.classList.toggle('selected');
-      if (selectedProcesses.includes(processName)) {
-        selectedProcesses = selectedProcesses.filter(p => p !== processName);
-      } else {
-        selectedProcesses.push(processName);
-      }
+    // 工程 単一選択
+    function selectProcess(element, processName) {
+      document.querySelectorAll('#processGroup .btn').forEach(b => b.classList.remove('selected'));
+      element.classList.add('selected');
+      selectedProcessName = processName;
 
       const qtyContainer = document.getElementById('qtyContainer');
-      if (selectedProcesses.includes('加工') || selectedProcesses.includes('整備')) {
+      if (processName === '加工' || processName === '整備') {
         qtyContainer.style.display = 'block';
       } else {
         qtyContainer.style.display = 'none';
       }
 
-      if (selectedProcesses.length > 0) {
-        document.getElementById('manageArea').style.display = 'block';
-      } else {
-        document.getElementById('manageArea').style.display = 'none';
-      }
-
+      document.getElementById('manageArea').style.display = 'block';
       renderOptions();
     }
 
@@ -401,82 +413,72 @@
       }
     }
 
+    // 作業項目 チェックボックス描画
     function renderOptions() {
-      const select = document.getElementById('optionSelect');
-      const editList = document.getElementById('optionEditList');
-      const addTargetSelect = document.getElementById('addProcessTarget');
+      if (!selectedProcessName) return;
 
-      if (selectedProcesses.length === 0) {
-        select.innerHTML = '<option value="">-- 先に工程を選択してください --</option>';
-        editList.innerHTML = '';
-        addTargetSelect.innerHTML = '';
-        return;
+      const boxList = document.getElementById('optionCheckboxList');
+      const editList = document.getElementById('optionEditList');
+      const list = optionsData[selectedProcessName] || [];
+
+      boxList.innerHTML = '';
+      if (list.length === 0) {
+        boxList.innerHTML = '<span style="color: #a0aec0; font-size: 0.85rem;">項目がありません。下から追加してください。</span>';
+      } else {
+        list.forEach((opt, idx) => {
+          const label = document.createElement('label');
+          label.className = 'checkbox-item';
+          label.innerHTML = `
+            <input type="checkbox" value="${opt}" class="option-checkbox">
+            ${opt}
+          `;
+          boxList.appendChild(label);
+        });
       }
 
-      select.innerHTML = '<option value="">-- 作業項目を選択 --</option>';
-      addTargetSelect.innerHTML = '';
-
-      let combinedOptions = [];
-
-      selectedProcesses.forEach(proc => {
-        const targetOpt = document.createElement('option');
-        targetOpt.value = proc;
-        targetOpt.textContent = proc;
-        addTargetSelect.appendChild(targetOpt);
-
-        const list = optionsData[proc] || [];
-        list.forEach(opt => {
-          combinedOptions.push({ process: proc, name: opt });
-          const option = document.createElement('option');
-          option.value = `${proc}: ${opt}`;
-          option.textContent = selectedProcesses.length > 1 ? `[${proc}] ${opt}` : opt;
-          select.appendChild(option);
-        });
-      });
-
       editList.innerHTML = '';
-      combinedOptions.forEach((item, index) => {
+      list.forEach((opt, index) => {
         const div = document.createElement('div');
         div.className = 'option-item';
         div.innerHTML = `
-          <span style="font-size:0.75rem; color:#718096; white-space:nowrap;">[${item.process}]</span>
-          <input type="text" value="${item.name}" id="edit-opt-${index}">
-          <button class="btn-sm btn-edit" onclick="updateOption('${item.process}', '${item.name}', ${index})">保存</button>
-          <button class="btn-sm btn-del" onclick="deleteOption('${item.process}', '${item.name}')">削除</button>
+          <input type="text" value="${opt}" id="edit-opt-${index}">
+          <button class="btn-sm btn-edit" onclick="updateOption(${index})">保存</button>
+          <button class="btn-sm btn-del" onclick="deleteOption(${index})">削除</button>
         `;
         editList.appendChild(div);
       });
     }
 
+    function getSelectedOptions() {
+      const checkboxes = document.querySelectorAll('.option-checkbox:checked');
+      return Array.from(checkboxes).map(cb => cb.value);
+    }
+
     function addOption() {
-      const targetProc = document.getElementById('addProcessTarget').value;
       const input = document.getElementById('newOptionInput');
       const val = input.value.trim();
-      if (!val || !targetProc) return;
+      if (!val || !selectedProcessName) return;
 
-      if (!optionsData[targetProc]) {
-        optionsData[targetProc] = [];
+      if (!optionsData[selectedProcessName]) {
+        optionsData[selectedProcessName] = [];
       }
-      optionsData[targetProc].push(val);
+      optionsData[selectedProcessName].push(val);
       input.value = '';
       renderOptions();
     }
 
-    function updateOption(proc, oldVal, index) {
+    function updateOption(index) {
       const input = document.getElementById(`edit-opt-${index}`);
       const val = input.value.trim();
-      if (!val || !proc) return;
+      if (!val || !selectedProcessName) return;
 
-      const idx = optionsData[proc].indexOf(oldVal);
-      if (idx !== -1) {
-        optionsData[proc][idx] = val;
-      }
+      optionsData[selectedProcessName][index] = val;
       renderOptions();
     }
 
-    function deleteOption(proc, val) {
-      if (!proc || !optionsData[proc]) return;
-      optionsData[proc] = optionsData[proc].filter(item => item !== val);
+    function deleteOption(index) {
+      if (!selectedProcessName) return;
+      optionsData[selectedProcessName].splice(index, 1);
       renderOptions();
     }
 
@@ -495,13 +497,12 @@
       if (!isRunning) {
         const missing = [];
         const currentModel = getSelectedModel();
+        const selectedOpts = getSelectedOptions();
 
         if (!currentModel) missing.push("1. 機種 (VAC-の後の数字)");
         if (selectedSpecTypes.length === 0) missing.push("2. 仕様区分 (1つ以上選択)");
-        if (selectedProcesses.length === 0) missing.push("3. 工程 (1つ以上選択)");
-        
-        const selectedOption = document.getElementById('optionSelect').value;
-        if (!selectedOption) missing.push("4. 作業項目");
+        if (!selectedProcessName) missing.push("3. 工程");
+        if (selectedOpts.length === 0) missing.push("4. 作業項目 (1つ以上チェック)");
 
         if (missing.length > 0) {
           alert("計測を開始するには、以下の項目をすべて選択・入力してください：\n\n・" + missing.join("\n・"));
@@ -537,11 +538,11 @@
 
       const model = getSelectedModel();
       const specTypes = [...selectedSpecTypes];
-      const processes = [...selectedProcesses];
-      const option = document.getElementById('optionSelect').value;
+      const process = selectedProcessName;
+      const selectedOpts = getSelectedOptions();
 
       let qty = "-";
-      if (processes.includes('加工') || processes.includes('整備')) {
+      if (process === '加工' || process === '整備') {
         const qtyVal = document.getElementById('qtySelect').value;
         if (qtyVal === 'custom') {
           qty = (document.getElementById('customQtyInput').value || "1") + "個";
@@ -554,8 +555,8 @@
         model: model,
         specType: specTypes.join('・'),
         specTypesArray: specTypes,
-        process: processes.join('・'),
-        option: option,
+        process: process,
+        option: selectedOpts.join('・'),
         qty: qty,
         duration: seconds,
         timeStr: formatTime(seconds)
