@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VAC オプション工数計測</title>
   
-  <!-- アイコン画像（icon.png を同リポジトリにアップロードすると適用されます） -->
+  <!-- アイコン画像 -->
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="icon" href="icon.png">
 
@@ -162,7 +162,6 @@
     }
     th { background-color: #edf2f7; }
 
-    /* 合計サマリースタイル */
     .summary-box-group {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -194,7 +193,7 @@
 
   <!-- 1. 機種選択 -->
   <div class="card">
-    <h2>1. 機種を選択</h2>
+    <h2>1. 機種を選択 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
     <div class="grid-3" id="modelGroup">
       <button class="btn" onclick="selectModel(this, '1型')">1型</button>
       <button class="btn" onclick="selectModel(this, '2型')">2型</button>
@@ -204,7 +203,7 @@
 
   <!-- 2. 仕様区分選択 -->
   <div class="card">
-    <h2>2. 仕様区分を選択</h2>
+    <h2>2. 仕様区分を選択 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
     <div class="grid-3" id="typeGroup">
       <button class="btn" onclick="selectSpecType(this, '標準')">標準</button>
       <button class="btn" onclick="selectSpecType(this, 'オプション')">オプション</button>
@@ -212,9 +211,9 @@
     </div>
   </div>
 
-  <!-- 3. 工程選択（冷凍機を除外） -->
+  <!-- 3. 工程選択 -->
   <div class="card">
-    <h2>3. 工程を選択</h2>
+    <h2>3. 工程を選択 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
     <div class="grid-4" id="processGroup">
       <button class="btn" onclick="selectProcess(this, '加工')">加工</button>
       <button class="btn" onclick="selectProcess(this, '組み立て')">組み立て</button>
@@ -225,7 +224,7 @@
 
   <!-- 4. 詳細項目 & 個数選択 -->
   <div class="card">
-    <h2>4. 詳細項目・個数を設定</h2>
+    <h2>4. 詳細項目・個数を設定 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
     
     <label style="font-size: 0.85rem; font-weight: bold;">作業項目:</label>
     <select id="optionSelect">
@@ -326,10 +325,8 @@
     let selectedSpecType = "";
     let selectedProcessName = "";
 
-    // VAC用データ保存
     let timerRecords = JSON.parse(localStorage.getItem('vac_timer_records_v4')) || [];
 
-    // 初期オプションデータ（冷凍機を除外）
     const optionsData = {
       "加工": ["内装加工", "バリ取り", "穴あけ"],
       "組み立て": ["パネル取付", "パーツ固定", "ネジ締め"],
@@ -362,7 +359,6 @@
       element.classList.add('selected');
       selectedProcessName = processName;
 
-      // 「加工」または「整備」の時のみ個数欄を表示
       const qtyContainer = document.getElementById('qtyContainer');
       if (processName === '加工' || processName === '整備') {
         qtyContainer.style.display = 'block';
@@ -450,8 +446,23 @@
       document.getElementById('display').textContent = formatTime(seconds);
     }
 
+    // 必須チェック付きスタート関数
     function startTimer() {
       if (!isRunning) {
+        // 未選択項目のチェック
+        const missing = [];
+        if (!selectedModel) missing.push("1. 機種");
+        if (!selectedSpecType) missing.push("2. 仕様区分");
+        if (!selectedProcessName) missing.push("3. 工程");
+        
+        const selectedOption = document.getElementById('optionSelect').value;
+        if (!selectedOption) missing.push("4. 作業項目");
+
+        if (missing.length > 0) {
+          alert("計測を開始するには、以下の項目をすべて選択してください：\n\n・" + missing.join("\n・"));
+          return;
+        }
+
         isRunning = true;
         timer = setInterval(() => {
           seconds++;
@@ -479,10 +490,10 @@
       isRunning = false;
       clearInterval(timer);
 
-      const model = selectedModel || "未選択";
-      const specType = selectedSpecType || "未選択";
-      const process = selectedProcessName || "未選択";
-      const option = document.getElementById('optionSelect').value || "未選択";
+      const model = selectedModel;
+      const specType = selectedSpecType;
+      const process = selectedProcessName;
+      const option = document.getElementById('optionSelect').value;
 
       let qty = "-";
       if (process === '加工' || process === '整備') {
@@ -526,7 +537,6 @@
       if (timerRecords.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#a0aec0;">計測データはまだありません</td></tr>';
       } else {
-        // 新しい順に表示 & 合計計算
         timerRecords.slice().reverse().forEach(item => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
@@ -540,7 +550,6 @@
           tbody.appendChild(tr);
         });
 
-        // 仕様区分ごとの集計
         timerRecords.forEach(item => {
           if (item.specType === '標準') secStandard += item.duration;
           else if (item.specType === 'オプション') secOption += item.duration;
@@ -548,7 +557,6 @@
         });
       }
 
-      // 合計箇所の表示更新
       document.getElementById('totalStandard').textContent = formatTime(secStandard);
       document.getElementById('totalOption').textContent = formatTime(secOption);
       document.getElementById('totalExtra').textContent = formatTime(secExtra);
@@ -560,7 +568,6 @@
         return;
       }
 
-      // 各区分の合計計算
       let secStandard = 0;
       let secOption = 0;
       let secExtra = 0;
@@ -577,7 +584,6 @@
         csvContent += `"${item.model}","${item.specType}","${item.process}","${item.option}","${item.qty}","${item.timeStr}"\n`;
       });
 
-      // 合計データの追加保存
       csvContent += "\n【仕様区分別 合計時間】\n";
       csvContent += "仕様区分,合計作業時間\n";
       csvContent += `"標準","${formatTime(secStandard)}"\n`;
