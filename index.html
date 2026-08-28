@@ -210,53 +210,11 @@
       font-family: monospace;
       color: #2d3748;
     }
-
-    /* モーダルダイアログ */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    .modal-content {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-    }
-    .modal-content h3 {
-      margin-top: 0;
-      font-size: 1.1rem;
-      color: #2d3748;
-    }
-    .split-input-group {
-      margin-bottom: 12px;
-    }
-    .split-input-group label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: bold;
-      margin-bottom: 4px;
-    }
-    .split-input-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .split-input-row input {
-      margin-top: 0;
-      text-align: right;
-    }
   </style>
 </head>
 <body>
 
-  <!-- 1. 機種選択 -->
+  <!-- 1. 機種選択（VAC-101 / VAC-201 / VAC-301） -->
   <div class="card">
     <h2>1. 機種を選択 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
     <div class="grid-3" id="modelGroup">
@@ -266,7 +224,7 @@
     </div>
   </div>
 
-  <!-- 2. 仕様区分選択 -->
+  <!-- 2. 仕様区分選択（複数選択可能） -->
   <div class="card">
     <h2>2. 仕様区分を選択（複数可） <span style="color: red; font-size: 0.8rem;">*1つ以上必須</span></h2>
     <div class="grid-3" id="typeGroup">
@@ -276,7 +234,7 @@
     </div>
   </div>
 
-  <!-- 3. 工程選択 -->
+  <!-- 3. 工程選択（1つ選択） -->
   <div class="card">
     <h2>3. 工程を選択 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
     <div class="grid-4" id="processGroup">
@@ -287,7 +245,7 @@
     </div>
   </div>
 
-  <!-- 4. 詳細項目 & 個数 -->
+  <!-- 4. 詳細項目（複数選択可能） & 個数選択 -->
   <div class="card">
     <h2>4. 詳細項目（複数可）・個数を設定 <span style="color: red; font-size: 0.8rem;">*1つ以上必須</span></h2>
     
@@ -370,7 +328,7 @@
             <th>標準</th>
             <th>オプション</th>
             <th>付加仕様</th>
-            <th>合計時間</th>
+            <th>計測時間</th>
           </tr>
         </thead>
         <tbody id="summaryTableBody">
@@ -379,26 +337,6 @@
           </tr>
         </tbody>
       </table>
-    </div>
-  </div>
-
-  <!-- 時間調整用モーダル -->
-  <div class="modal-overlay" id="splitModal">
-    <div class="modal-content">
-      <h3>⏱️ 計測時間の調整・確認</h3>
-      <p style="font-size: 0.85rem; color: #4a5568;">
-        計測した合計時間 <strong id="modalTotalStr">00:00:00</strong> を各仕様区分に割り振ってください（秒単位）。
-      </p>
-
-      <div id="splitInputContainer"></div>
-
-      <div style="font-size: 0.8rem; color: #e53e3e; margin-bottom: 12px; display: none;" id="modalError">
-        ※割り振り秒数の合計が、計測した合計時間と一致していません。
-      </div>
-
-      <div style="display: flex; gap: 8px;">
-        <button class="btn-action btn-save" onclick="confirmTimeSplit()">確定して保存</button>
-      </div>
     </div>
   </div>
 
@@ -428,6 +366,7 @@
       localStorage.setItem('vac_timer_records_v1', JSON.stringify(timerRecords));
     }
 
+    // 機種 単一選択
     function selectModel(element, modelName) {
       document.querySelectorAll('#modelGroup .btn').forEach(b => b.classList.remove('selected'));
       element.classList.add('selected');
@@ -585,90 +524,17 @@
       }
     }
 
-    // 計測終了
     function stopTimer() {
       isRunning = false;
       clearInterval(timer);
 
-      // 区分が1つだけならダイアログなしでそのまま保存
-      if (selectedSpecTypes.length === 1) {
-        const type = selectedSpecTypes[0];
-        const secStd = type === '標準' ? seconds : 0;
-        const secOpt = type === 'オプション' ? seconds : 0;
-        const secExt = type === '付加仕様' ? seconds : 0;
-        
-        saveRecord(secStd, secOpt, secExt);
-        resetTimerState();
-      } else {
-        // 区分が複数なら調整モーダルを表示
-        openSplitModal();
-      }
-    }
+      const model = selectedModelName;
+      const specTypes = [...selectedSpecTypes];
+      const process = selectedProcessName;
+      const selectedOpts = getSelectedOptions();
 
-    // モーダルを開く
-    function openSplitModal() {
-      document.getElementById('modalTotalStr').textContent = formatTime(seconds);
-      const container = document.getElementById('splitInputContainer');
-      container.innerHTML = '';
-
-      // 初期割り振り（均等割り）
-      const count = selectedSpecTypes.length;
-      const baseSec = Math.floor(seconds / count);
-      let remainder = seconds % count;
-
-      selectedSpecTypes.forEach((type, index) => {
-        let initVal = baseSec;
-        if (remainder > 0) {
-          initVal += 1;
-          remainder--;
-        }
-
-        const div = document.createElement('div');
-        div.className = 'split-input-group';
-        div.innerHTML = `
-          <label>${type}の時間（秒）:</label>
-          <div class="split-input-row">
-            <input type="number" class="split-sec-input" data-type="${type}" value="${initVal}" min="0" max="${seconds}">
-            <span>秒 (${formatTime(initVal)})</span>
-          </div>
-        `;
-        container.appendChild(div);
-      });
-
-      document.getElementById('modalError').style.display = 'none';
-      document.getElementById('splitModal').style.display = 'flex';
-    }
-
-    // モーダルで確定ボタンを押したとき
-    function confirmTimeSplit() {
-      const inputs = document.querySelectorAll('.split-sec-input');
-      let sum = 0;
-      let secStd = 0, secOpt = 0, secExt = 0;
-
-      inputs.forEach(input => {
-        const val = parseInt(input.value, 10) || 0;
-        const type = input.getAttribute('data-type');
-        sum += val;
-
-        if (type === '標準') secStd = val;
-        if (type === 'オプション') secOpt = val;
-        if (type === '付加仕様') secExt = val;
-      });
-
-      if (sum !== seconds) {
-        document.getElementById('modalError').style.display = 'block';
-        return;
-      }
-
-      document.getElementById('splitModal').style.display = 'none';
-      saveRecord(secStd, secOpt, secExt);
-      resetTimerState();
-    }
-
-    // レコードの保存
-    function saveRecord(secStd, secOpt, secExt) {
       let qty = "-";
-      if (selectedProcessName === '加工' || selectedProcessName === '整備') {
+      if (process === '加工' || process === '整備') {
         const qtyVal = document.getElementById('qtySelect').value;
         if (qtyVal === 'custom') {
           qty = (document.getElementById('customQtyInput').value || "1") + "個";
@@ -678,22 +544,18 @@
       }
 
       timerRecords.push({
-        model: selectedModelName,
-        process: selectedProcessName,
-        option: getSelectedOptions().join('・'),
+        model: model,
+        specTypesArray: specTypes,
+        process: process,
+        option: selectedOpts.join('・'),
         qty: qty,
         duration: seconds,
-        timeStr: formatTime(seconds),
-        secStandard: secStd,
-        secOption: secOpt,
-        secExtra: secExt
+        timeStr: formatTime(seconds)
       });
 
       saveToStorage();
       renderSummaryTable();
-    }
 
-    function resetTimerState() {
       seconds = 0;
       updateDisplay();
       document.getElementById('startBtn').disabled = false;
@@ -714,13 +576,14 @@
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#a0aec0;">計測データはまだありません</td></tr>';
       } else {
         timerRecords.slice().reverse().forEach(item => {
-          const stdSec = item.secStandard || 0;
-          const optSec = item.secOption || 0;
-          const extSec = item.secExtra || 0;
+          const arr = item.specTypesArray || [];
+          const isStd = arr.includes('標準');
+          const isOpt = arr.includes('オプション');
+          const isExt = arr.includes('付加仕様');
 
-          const stdText = stdSec > 0 ? formatTime(stdSec) : "-";
-          const optText = optSec > 0 ? formatTime(optSec) : "-";
-          const extText = extSec > 0 ? formatTime(extSec) : "-";
+          const stdText = isStd ? item.timeStr : "-";
+          const optText = isOpt ? item.timeStr : "-";
+          const extText = isExt ? item.timeStr : "-";
 
           const tr = document.createElement('tr');
           tr.innerHTML = `
@@ -728,18 +591,19 @@
             <td>${item.process}</td>
             <td><strong>${item.option}</strong></td>
             <td>${item.qty}</td>
-            <td style="color: ${stdSec > 0 ? '#2b6cb0' : '#a0aec0'};">${stdText}</td>
-            <td style="color: ${optSec > 0 ? '#2b6cb0' : '#a0aec0'};">${optText}</td>
-            <td style="color: ${extSec > 0 ? '#2b6cb0' : '#a0aec0'};">${extText}</td>
+            <td style="color: ${isStd ? '#2b6cb0' : '#a0aec0'};">${stdText}</td>
+            <td style="color: ${isOpt ? '#2b6cb0' : '#a0aec0'};">${optText}</td>
+            <td style="color: ${isExt ? '#2b6cb0' : '#a0aec0'};">${extText}</td>
             <td><strong>${item.timeStr}</strong></td>
           `;
           tbody.appendChild(tr);
         });
 
         timerRecords.forEach(item => {
-          secStandard += (item.secStandard || 0);
-          secOption += (item.secOption || 0);
-          secExtra += (item.secExtra || 0);
+          const arr = item.specTypesArray || [];
+          if (arr.includes('標準')) secStandard += item.duration;
+          if (arr.includes('オプション')) secOption += item.duration;
+          if (arr.includes('付加仕様')) secExtra += item.duration;
         });
       }
 
@@ -759,17 +623,19 @@
       let secExtra = 0;
 
       timerRecords.forEach(item => {
-        secStandard += (item.secStandard || 0);
-        secOption += (item.secOption || 0);
-        secExtra += (item.secExtra || 0);
+        const arr = item.specTypesArray || [];
+        if (arr.includes('標準')) secStandard += item.duration;
+        if (arr.includes('オプション')) secOption += item.duration;
+        if (arr.includes('付加仕様')) secExtra += item.duration;
       });
 
       let csvContent = "\uFEFF【VAC 個別計測履歴】\n";
-      csvContent += "機種,工程,作業項目,個数,標準時間,オプション時間,付加仕様時間,合計時間\n";
+      csvContent += "機種,工程,作業項目,個数,標準時間,オプション時間,付加仕様時間,計測時間\n";
       timerRecords.forEach(item => {
-        const stdText = (item.secStandard || 0) > 0 ? formatTime(item.secStandard) : "";
-        const optText = (item.secOption || 0) > 0 ? formatTime(item.secOption) : "";
-        const extText = (item.secExtra || 0) > 0 ? formatTime(item.secExtra) : "";
+        const arr = item.specTypesArray || [];
+        const stdText = arr.includes('標準') ? item.timeStr : "";
+        const optText = arr.includes('オプション') ? item.timeStr : "";
+        const extText = arr.includes('付加仕様') ? item.timeStr : "";
 
         csvContent += `"${item.model}","${item.process}","${item.option}","${item.qty}","${stdText}","${optText}","${extText}","${item.timeStr}"\n`;
       });
