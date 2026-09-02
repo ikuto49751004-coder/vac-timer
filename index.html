@@ -3,260 +3,164 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VAC オプション工数計測</title>
-  
-  <link rel="apple-touch-icon" href="icon.png">
-  <link rel="icon" href="icon.png">
-
+  <title>工数計測アプリ (VAC用)</title>
+  <!-- Excel(.xlsx)ファイルをそのまま読み込むための外部ライブラリ -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #f4f5f7;
-      margin: 0;
-      padding: 16px;
-      color: #333;
-    }
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    h2 {
-      font-size: 1.05rem;
-      margin-top: 0;
-      margin-bottom: 12px;
-    }
-    .grid-4 {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-    }
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-    .btn {
-      padding: 10px 4px;
-      font-size: 0.9rem;
-      font-weight: bold;
-      border: 2px solid #e2e8f0;
-      border-radius: 8px;
-      background: #fff;
-      color: #2b6cb0;
-      cursor: pointer;
-    }
-    .btn.selected {
-      background: #3182ce;
-      color: #fff;
-      border-color: #3182ce;
-    }
-    select, input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      box-sizing: border-box;
-      font-size: 0.95rem;
-    }
-    .checkbox-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 8px;
-      max-height: 180px;
-      overflow-y: auto;
-      border: 1px solid #e2e8f0;
-      padding: 10px;
-      border-radius: 8px;
-      background: #fafafa;
-    }
-    .checkbox-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.95rem;
-      cursor: pointer;
-    }
-    .checkbox-item input[type="checkbox"] {
-      width: auto;
-      margin-top: 0;
-      transform: scale(1.2);
-    }
-    .add-group {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    .add-group input { margin-top: 0; }
-    .btn-add {
-      background: #3182ce;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 0 16px;
-      font-weight: bold;
-      white-space: nowrap;
-      cursor: pointer;
-    }
-    .option-list {
-      margin-top: 12px;
-      max-height: 150px;
-      overflow-y: auto;
-    }
-    .option-item {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-    .option-item input { margin-top: 0; }
-    .btn-sm {
-      padding: 8px 12px;
-      font-size: 0.85rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .btn-edit { background: #edf2f7; color: #2d3748; }
-    .btn-del { background: #fed7d7; color: #9b2c2c; }
-    .timer-display {
-      font-size: 2.8rem;
-      font-weight: bold;
-      text-align: center;
-      margin: 16px 0;
-      font-family: monospace;
-    }
-    .controls {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-    .sub-controls {
-      display: flex;
-      gap: 6px;
-    }
-    .btn-action {
-      flex: 1;
-      padding: 12px 6px;
-      font-size: 0.95rem;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      color: #fff;
-      cursor: pointer;
-      text-align: center;
-    }
-    .btn-start { background-color: #38a169; }
-    .btn-pause { background-color: #dd6b20; }
-    .btn-stop { background-color: #e53e3e; }
-    .btn-save { background-color: #3182ce; }
-    .btn-clear { background-color: #718096; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #e0f2fe; margin: 0; padding: 15px; color: #333; }
     
-    .btn-action:disabled {
-      background-color: #cbd5e0;
-      cursor: not-allowed;
-    }
-    details summary {
-      cursor: pointer;
-      color: #4a5568;
-      font-size: 0.9rem;
-      font-weight: bold;
-      margin-top: 10px;
-    }
-    .table-wrapper {
-      overflow-x: auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 8px;
-      min-width: 650px;
-    }
-    th, td {
-      border: 1px solid #e2e8f0;
-      padding: 8px;
-      text-align: left;
-      font-size: 0.85rem;
-    }
-    th { background-color: #edf2f7; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .header-title { font-size: 18px; font-weight: bold; color: #1a1a1a; margin: 0; }
+    .btn-settings-icon { background: #fff; border: 1px solid #cbd5e1; font-size: 22px; padding: 4px 10px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #475569; }
+    .btn-settings-icon:hover { background: #f1f5f9; }
+    
+    .card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    h3 { margin: 0 0 12px 0; font-size: 16px; color: #1a1a1a; font-weight: bold; }
+    
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .grid-process { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .grid-process .full-width { grid-column: span 2; }
 
-    .summary-box-group {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 12px;
+    .btn { background: #fff; border: 2px solid #3b82f6; color: #1d4ed8; font-weight: bold; padding: 12px 4px; border-radius: 8px; font-size: 15px; text-align: center; cursor: pointer; }
+    .btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    
+    select, input[type="number"], input[type="text"] { width: 100%; padding: 10px 12px; font-size: 15px; border-radius: 8px; border: 1px solid #ced4da; background-color: #f8f9fa; box-sizing: border-box; font-weight: bold; }
+    label { font-size: 14px; font-weight: bold; color: #1d4ed8; }
+    .field-group { margin-bottom: 12px; }
+
+    .btn-file { background: #3b82f6; color: #fff; border: none; padding: 12px; font-weight: bold; border-radius: 8px; width: 100%; font-size: 15px; margin-bottom: 12px; cursor: pointer; }
+    
+    .mascot-box { text-align: center; padding: 10px 12px; background: #f0f9ff; border-radius: 10px; margin-bottom: 10px; min-height: 50px; border: 1px solid #bae6fd; display: flex; align-items: center; justify-content: center; }
+    .mascot-icon { font-size: 32px; display: inline-block; }
+    .mascot-text { font-size: 14px; font-weight: bold; color: #0369a1; margin-left: 6px; }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
     }
-    .summary-box {
-      background: #ebf8ff;
-      border: 1px solid #bee3f8;
-      border-radius: 8px;
-      padding: 10px;
-      text-align: center;
+    .mascot-animating {
+      animation: bounce 0.8s infinite ease-in-out;
     }
-    .summary-box .title {
-      font-size: 0.8rem;
-      color: #2b6cb0;
-      font-weight: bold;
-      margin-bottom: 4px;
-    }
-    .summary-box .val {
-      font-size: 1rem;
-      font-weight: bold;
-      font-family: monospace;
-      color: #2d3748;
-    }
+
+    .timer-display { font-size: 48px; font-weight: bold; text-align: center; margin: 5px 0 10px 0; font-family: monospace; color: #111827; }
+    
+    .timer-btns-main { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+    .timer-btns-sub { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    
+    .btn-start { background: #10b981; color: #fff; border: none; padding: 14px; font-weight: bold; border-radius: 8px; font-size: 15px; cursor: pointer; }
+    .btn-stop { background: #cbd5e1; color: #475569; border: none; padding: 14px; font-weight: bold; border-radius: 8px; font-size: 15px; cursor: pointer; }
+    .btn-finish { background: #cbd5e1; color: #475569; border: none; padding: 14px; font-weight: bold; border-radius: 8px; font-size: 15px; cursor: pointer; }
+    .btn-save { background: #3b82f6; color: #fff; border: none; padding: 12px 4px; font-weight: bold; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .btn-copy-all { background: #059669; color: #fff; border: none; padding: 12px 4px; font-weight: bold; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .btn-reset-all { background: #64748b; color: #fff; border: none; padding: 12px 4px; font-weight: bold; border-radius: 8px; font-size: 13px; cursor: pointer; }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; margin-bottom: 15px; }
+    .summary-box { background: #f0f9ff; border-radius: 8px; padding: 10px 4px; border: 1px solid #bae6fd; }
+    .summary-title { font-size: 12px; color: #0369a1; font-weight: bold; }
+    .summary-time { font-size: 14px; color: #0c4a6e; font-weight: bold; font-family: monospace; margin-top: 4px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px; }
+    th { background: #f1f5f9; padding: 6px 4px; border: 1px solid #e2e8f0; color: #334155; }
+    td { padding: 6px 4px; border: 1px solid #e2e8f0; text-align: center; }
+    
+    .btn-copy { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; padding: 6px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+    details.edit-section { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #fafafa; overflow: hidden; }
+    details.edit-section summary { font-size: 14px; font-weight: bold; color: #334155; padding: 12px; cursor: pointer; user-select: none; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+    details.edit-section summary::-webkit-details-marker { display: none; }
+    details.edit-section summary::after { content: "▶"; font-size: 12px; color: #64748b; transition: transform 0.2s; }
+    details.edit-section[open] summary::after { transform: rotate(90deg); }
+    
+    .edit-content { padding: 0 12px 12px 12px; }
+    .add-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .add-row input { flex: 1; background-color: #fff; border: 1px solid #cbd5e1; }
+    .btn-add-action { background: #3b82f6; color: #fff; border: none; padding: 0 16px; font-weight: bold; border-radius: 8px; font-size: 14px; cursor: pointer; white-space: nowrap; }
+
+    .item-manage-list { display: flex; flex-direction: column; gap: 8px; }
+    .item-manage-row { display: flex; gap: 8px; align-items: center; }
+    .item-manage-row input { flex: 1; background-color: #fff; border: 1px solid #cbd5e1; }
+    .btn-item-save { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 10px 12px; font-weight: bold; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .btn-item-del { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding: 10px 12px; font-weight: bold; border-radius: 8px; font-size: 13px; cursor: pointer; }
+
+    .modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; }
+    .modal-backdrop.open { display: flex; }
+    .modal-content { background: #fff; border-radius: 12px; padding: 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .modal-header h4 { margin: 0; font-size: 16px; color: #1e293b; }
+    .btn-modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b; }
+
+    .setting-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0; }
+    .setting-section-title { font-size: 14px; font-weight: bold; color: #1e293b; margin-bottom: 10px; }
+
+    .voice-control-group { display: flex; flex-direction: column; gap: 12px; }
+    .slider-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: bold; color: #475569; }
+    .slider-row input[type="range"] { width: 55%; }
+    .btn-test-voice { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 5px; }
+    .btn-clear-jobs { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; width: 100%; }
   </style>
 </head>
 <body>
 
-  <!-- 1. 機種選択（VAC-101 / VAC-201 / VAC-301） -->
+  <!-- トップヘッダー -->
+  <div class="header-bar">
+    <h2 class="header-title">工数計測アプリ (VAC用)</h2>
+    <button class="btn-settings-icon" onclick="openVoiceSettings()" title="設定">⚙️</button>
+  </div>
+
+  <!-- 0. 仕事番号選択 -->
   <div class="card">
-    <h2>1. 機種を選択 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
-    <div class="grid-3" id="modelGroup">
-      <button class="btn" onclick="selectModel(this, 'VAC-101')">VAC-101</button>
-      <button class="btn" onclick="selectModel(this, 'VAC-201')">VAC-201</button>
-      <button class="btn" onclick="selectModel(this, 'VAC-301')">VAC-301</button>
+    <h3>0. 仕事番号（製番）を選択</h3>
+    <input type="file" id="excel-input" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importExcel(this)">
+    <button class="btn-file" onclick="document.getElementById('excel-input').click()">📁 工程表(Excel/CSV)を読み込み</button>
+    <select id="job-select" onchange="autoSelectJob()">
+      <option value="">-- 先に工程表ファイルを読み込んでください --</option>
+    </select>
+  </div>
+
+  <!-- 1. 機種を選択 -->
+  <div class="card">
+    <h3>1. 機種を選択 <span style="color:#ef4444;">*</span></h3>
+    <div class="grid-3" id="model-group">
+      <button class="btn" onclick="selectBtn('model-group', this)">VAC-101</button>
+      <button class="btn" onclick="selectBtn('model-group', this)">VAC-201</button>
+      <button class="btn" onclick="selectBtn('model-group', this)">VAC-301</button>
     </div>
   </div>
 
-  <!-- 2. 仕様区分選択（複数選択可能） -->
+  <!-- 2. 仕様区分を選択 -->
   <div class="card">
-    <h2>2. 仕様区分を選択（複数可） <span style="color: red; font-size: 0.8rem;">*1つ以上必須</span></h2>
-    <div class="grid-3" id="typeGroup">
-      <button class="btn" onclick="toggleSpecType(this, '標準')">標準</button>
-      <button class="btn" onclick="toggleSpecType(this, 'オプション')">オプション</button>
-      <button class="btn" onclick="toggleSpecType(this, '付加仕様')">付加仕様</button>
+    <h3>2. 仕様区分を選択 <span style="color:#ef4444;">*</span></h3>
+    <div class="grid-3" id="spec-group">
+      <button class="btn" onclick="selectBtn('spec-group', this)">標準</button>
+      <button class="btn" onclick="selectBtn('spec-group', this)">オプション</button>
+      <button class="btn" onclick="selectBtn('spec-group', this)">付加仕様</button>
     </div>
   </div>
 
-  <!-- 3. 工程選択（1つ選択） -->
+  <!-- 3. 工程を選択 (冷凍機を削除) -->
   <div class="card">
-    <h2>3. 工程を選択 <span style="color: red; font-size: 0.8rem;">*必須</span></h2>
-    <div class="grid-4" id="processGroup">
+    <h3>3. 工程を選択 <span style="color:#ef4444;">*</span></h3>
+    <div class="grid-process" id="process-group">
       <button class="btn" onclick="selectProcess(this, '加工')">加工</button>
       <button class="btn" onclick="selectProcess(this, '組み立て')">組み立て</button>
       <button class="btn" onclick="selectProcess(this, '検査')">検査</button>
-      <button class="btn" onclick="selectProcess(this, '整備')">整備</button>
+      <button class="btn full-width" onclick="selectProcess(this, '整備')">整備</button>
     </div>
   </div>
 
-  <!-- 4. 詳細項目（複数選択可能） & 個数選択 -->
+  <!-- 4. 詳細項目・個数を設定 -->
   <div class="card">
-    <h2>4. 詳細項目（複数可）・個数を設定 <span style="color: red; font-size: 0.8rem;">*1つ以上必須</span></h2>
-    
-    <label style="font-size: 0.85rem; font-weight: bold;">作業項目:</label>
-    <div class="checkbox-group" id="optionCheckboxList">
-      <span style="color: #a0aec0; font-size: 0.85rem;">-- 先に工程を選択してください --</span>
+    <h3>4. 詳細項目・個数を設定</h3>
+    <div class="field-group">
+      <label>作業項目 <span style="color:#ef4444;">*</span>:</label>
+      <select id="detail-item" style="margin-top:6px;" onchange="checkAllInputsAndMascot()">
+        <option value="">-- 作業項目を選択 --</option>
+      </select>
     </div>
 
-    <div id="qtyContainer" style="display: none; margin-top: 12px;">
-      <label style="font-size: 0.85rem; font-weight: bold; color: #2b6cb0;">個数:</label>
-      <select id="qtySelect" onchange="toggleCustomQty(this.value)">
+    <div class="field-group">
+      <label>個数 <span style="color:#ef4444;">*</span>:</label>
+      <select id="item-count" onchange="toggleCustomCount(this); checkAllInputsAndMascot();" style="margin-top:6px;">
         <option value="1">1個</option>
         <option value="2">2個</option>
         <option value="3">3個</option>
@@ -267,399 +171,757 @@
         <option value="8">8個</option>
         <option value="9">9個</option>
         <option value="10">10個</option>
-        <option value="custom">その他（直接入力）</option>
+        <option value="custom">直接入力...</option>
       </select>
-      <input type="number" id="customQtyInput" placeholder="個数を入力（例: 15）" min="1" style="display: none; margin-top: 6px;">
+      <input type="number" id="custom-count" placeholder="個数を入力" style="display:none; margin-top:6px;" min="1" value="1" oninput="checkAllInputsAndMascot()">
     </div>
 
-    <details id="manageArea" style="display: none; margin-top: 12px;">
-      <summary>⚙️ 作業項目の追加・編集</summary>
-      <div class="add-group">
-        <input type="text" id="newOptionInput" placeholder="新しい項目名">
-        <button class="btn-add" onclick="addOption()">追加</button>
+    <details class="edit-section">
+      <summary>⚙ 作業項目の追加・編集</summary>
+      <div class="edit-content">
+        <div class="add-row">
+          <input type="text" id="new-item-input" placeholder="新しい項目名">
+          <button class="btn-add-action" onclick="addItemInline()">追加</button>
+        </div>
+
+        <div id="item-manage-list" class="item-manage-list"></div>
       </div>
-      <div class="option-list" id="optionEditList"></div>
     </details>
   </div>
 
-  <!-- 5. タイマー操作 & 集計 -->
+  <!-- タイマーカード -->
   <div class="card">
-    <div class="timer-display" id="display">00:00:00</div>
-    
-    <div class="controls">
-      <button id="startBtn" class="btn-action btn-start" onclick="startTimer()">スタート</button>
-      <button id="pauseBtn" class="btn-action btn-pause" onclick="pauseTimer()" disabled>一時停止</button>
-      <button id="stopBtn" class="btn-action btn-stop" onclick="stopTimer()" disabled>計測終了</button>
+    <div class="mascot-box">
+      <span class="mascot-icon" id="mascot-icon">⚠️</span>
+      <span class="mascot-text" id="mascot-text">必須項目を選択してください</span>
     </div>
 
-    <div class="sub-controls">
-      <button class="btn-action btn-save" onclick="exportCSV()">📁 保存 (CSV)</button>
-      <button class="btn-action btn-clear" onclick="clearSummaryData()">🗑️ 全リセット</button>
+    <div class="timer-display" id="timer">00:00:00</div>
+    <div class="timer-btns-main">
+      <button class="btn-start" id="start-btn" onclick="startTimer()">スタート</button>
+      <button class="btn-stop" id="stop-btn" onclick="stopTimer()">一時停止</button>
+      <button class="btn-finish" id="finish-btn" onclick="finishTimer()">計測終了</button>
+    </div>
+    <div class="timer-btns-sub">
+      <button class="btn-save" onclick="exportCSV()">📁 保存 (CSV)</button>
+      <button class="btn-copy-all" onclick="copyAllDataToClipboard()">📋 全件コピー</button>
+      <button class="btn-reset-all" onclick="resetAllData()">🗑 全リセット</button>
     </div>
   </div>
 
-  <!-- 6. 仕様区分別 合計時間 ＆ 計測結果一覧 -->
+  <!-- 5. 合計時間 & 履歴カード -->
   <div class="card">
-    <h2>⏱️ 仕様区分ごとの合計時間</h2>
-    <div class="summary-box-group">
+    <h3>⏱ 仕様区分ごとの合計時間</h3>
+    <div class="summary-grid">
       <div class="summary-box">
-        <div class="title">標準 合計</div>
-        <div class="val" id="totalStandard">00:00:00</div>
+        <div class="summary-title">標準 合計</div>
+        <div class="summary-time" id="sum-standard">00:00:00</div>
       </div>
       <div class="summary-box">
-        <div class="title">オプション 合計</div>
-        <div class="val" id="totalOption">00:00:00</div>
+        <div class="summary-title">オプション 合計</div>
+        <div class="summary-time" id="sum-option">00:00:00</div>
       </div>
       <div class="summary-box">
-        <div class="title">付加仕様 合計</div>
-        <div class="val" id="totalExtra">00:00:00</div>
+        <div class="summary-title">付加仕様 合計</div>
+        <div class="summary-time" id="sum-extra">00:00:00</div>
       </div>
     </div>
 
-    <h2>📊 計測結果履歴</h2>
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>機種</th>
-            <th>工程</th>
-            <th>作業項目</th>
-            <th>個数</th>
-            <th>標準</th>
-            <th>オプション</th>
-            <th>付加仕様</th>
-            <th>計測時間</th>
-          </tr>
-        </thead>
-        <tbody id="summaryTableBody">
-          <tr>
-            <td colspan="8" style="text-align:center; color:#a0aec0;">計測データはまだありません</td>
-          </tr>
-        </tbody>
-      </table>
+    <h3>📊 計測結果履歴（保存済みデータ）</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>仕事番号</th>
+          <th>機種/区分/工程</th>
+          <th>作業項目</th>
+          <th>時間</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="history-list">
+        <tr><td colspan="5" style="color:#94a3b8;">計測データはまだありません</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 設定用 モーダル画面 -->
+  <div class="modal-backdrop" id="voice-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4>⚙️ 各種設定</h4>
+        <button class="btn-modal-close" onclick="closeVoiceSettings()">✖</button>
+      </div>
+
+      <!-- 音声設定 -->
+      <div class="setting-section" style="border-top:none; padding-top:0;">
+        <div class="setting-section-title">🔊 応援音声の設定</div>
+        <div class="voice-control-group">
+          <div class="slider-row">
+            <span>話す速さ: <span id="rate-val">0.85</span></span>
+            <input type="range" id="voice-rate" min="0.5" max="1.5" step="0.05" value="0.85" oninput="updateVoiceSettings()">
+          </div>
+          <div class="slider-row">
+            <span>声の高さ: <span id="pitch-val">1.4</span></span>
+            <input type="range" id="voice-pitch" min="0.8" max="2.0" step="0.1" value="1.4" oninput="updateVoiceSettings()">
+          </div>
+          <button class="btn-test-voice" onclick="speakText('15分経過！その調子で頑張ろう！')">🔊 声をテスト再生する</button>
+        </div>
+      </div>
+
+      <!-- 仕事番号データ管理 -->
+      <div class="setting-section">
+        <div class="setting-section-title">📁 仕事番号データの管理</div>
+        <button class="btn-clear-jobs" onclick="clearJobScheduleData()">🗑 読み込み済みの仕事番号を全削除</button>
+      </div>
     </div>
   </div>
 
   <script>
-    let timer;
+    let timerInterval = null;
     let seconds = 0;
-    let isRunning = false;
-    
-    let selectedModelName = "";
-    let selectedSpecTypes = [];
-    let selectedProcessName = "";
+    let scheduleData = [];
+    let historyData = [];
+    let currentProcess = '';
+    let currentJobNo = '';
 
-    let timerRecords = JSON.parse(localStorage.getItem('vac_timer_records_v1')) || [];
+    function openVoiceSettings() {
+      document.getElementById('voice-modal').classList.add('open');
+    }
 
-    const optionsData = {
-      "加工": ["内装加工", "バリ取り", "穴あけ"],
-      "組み立て": ["パネル取付", "パーツ固定", "ネジ締め"],
-      "検査": ["外観チェック", "動作確認"],
-      "整備": ["清掃", "点検", "注油"]
+    function closeVoiceSettings() {
+      document.getElementById('voice-modal').classList.remove('open');
+    }
+
+    let audioCtx = null;
+    function playChime() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc1.type = 'triangle';
+        osc2.type = 'triangle';
+        osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+        osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc1.start();
+        osc1.stop(audioCtx.currentTime + 0.1);
+        osc2.start(audioCtx.currentTime + 0.1);
+        osc2.stop(audioCtx.currentTime + 0.4);
+      } catch (e) {
+        console.log("Audio error:", e);
+      }
+    }
+
+    let availableVoices = [];
+    function loadVoices() {
+      if ('speechSynthesis' in window) {
+        availableVoices = window.speechSynthesis.getVoices();
+      }
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+      loadVoices();
+    }
+
+    function updateVoiceSettings() {
+      const rate = document.getElementById('voice-rate').value;
+      const pitch = document.getElementById('voice-pitch').value;
+      document.getElementById('rate-val').textContent = rate;
+      document.getElementById('pitch-val').textContent = pitch;
+    }
+
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+
+        const uttr = new SpeechSynthesisUtterance(text);
+        uttr.lang = 'ja-JP';
+
+        const femaleVoice = availableVoices.find(v => 
+          v.lang.includes('ja') && (
+            v.name.includes('Kyoko') || 
+            v.name.includes('Haruka') || 
+            v.name.includes('Sayaka') || 
+            v.name.includes('Otoya') === false
+          )
+        );
+        if (femaleVoice) uttr.voice = femaleVoice;
+
+        const currentRate = parseFloat(document.getElementById('voice-rate').value) || 0.85;
+        const currentPitch = parseFloat(document.getElementById('voice-pitch').value) || 1.4;
+
+        uttr.rate = currentRate;
+        uttr.pitch = currentPitch;
+
+        window.speechSynthesis.speak(uttr);
+      }
+    }
+
+    function cheerNotice(text) {
+      playChime();
+      setTimeout(() => {
+        speakText(text);
+      }, 400);
+    }
+
+    const mascotConfig = {
+      '加工': { icon: '🐠', text: '作業スタート！集中していこう！' },
+      '組み立て': { icon: '🐡', text: '作業スタート！ファイト！' },
+      '検査': { icon: '🦭', text: '作業スタート！チェックがんばろう！' },
+      '整備': { icon: '🐬', text: '作業スタート！ファイト！' },
+      'default': { icon: '🐟', text: '作業スタート！がんばって！' }
     };
+
+    const intervalMessages15 = {
+      '加工': [
+        '15分経過！職人技が光ってるね！すごく良いペース！',
+        '30分突破！手際がとっても素晴らしい！',
+        '45分経過！集中力バッチリ！順調そのもの！',
+        '1時間経過！本当にお疲れ様！すばらしい成果だよ！'
+      ],
+      '組み立て': [
+        '15分経過！ナイスファイト！着実に形になってるね！',
+        '30分突破！すごくいい流れ！その調子！',
+        '45分経過！すばらしい集中力！マイペースでいこう！',
+        '1時間経過！1時間達成！適度に肩の力を抜いてね！'
+      ],
+      '検査': [
+        '15分経過！確実な手仕事、流石です！',
+        '30分突破！素晴らしい集中力！順調だよ！',
+        '45分経過！丁寧なチェック、ありがとう！あと少し！',
+        '1時間経過！長時間の集中、本当にお疲れ様！'
+      ],
+      '整備': [
+        '15分経過！最高の仕上げに向かってるね！',
+        '30分突破！手際がとっても素晴らしい！',
+        '45分経過！順調順調！その調子でファイト！',
+        '1時間経過！がんばったね！しっかり休憩も挟んでね！'
+      ],
+      'default': [
+        '15分経過！すごくいい調子だよ！',
+        '30分経過！素晴らしい集中力！',
+        '45分経過！順調そのもの！ファイト！',
+        '1時間経過！お疲れ様！その調子で頑張ろう！'
+      ]
+    };
+
+    const defaultDetailOptions = {
+      '加工': ['穴あけ', 'タップ立て', '曲げ加工', 'バリ取り'],
+      '組み立て': ['パネル取付', 'パーツ固定', 'ネジ締め'],
+      '検査': ['外観検査', '動作確認', '絶縁抵抗試験'],
+      '整備': ['清掃・拭き上げ', '梱包', '出荷準備']
+    };
+
+    let detailOptions = JSON.parse(localStorage.getItem('kousu_vac_detailOptions')) || defaultDetailOptions;
 
     window.onload = function() {
-      renderSummaryTable();
+      const savedHistory = localStorage.getItem('kousu_vac_historyData');
+      if (savedHistory) {
+        historyData = JSON.parse(savedHistory);
+        updateHistoryTable();
+        updateSummary();
+      }
+      
+      const savedSchedule = localStorage.getItem('kousu_vac_scheduleData');
+      if (savedSchedule) {
+        scheduleData = JSON.parse(savedSchedule);
+        renderJobSelect();
+      }
+
+      checkAllInputsAndMascot();
     };
 
-    function saveToStorage() {
-      localStorage.setItem('vac_timer_records_v1', JSON.stringify(timerRecords));
+    function saveDetailOptions() {
+      localStorage.setItem('kousu_vac_detailOptions', JSON.stringify(detailOptions));
     }
 
-    // 機種 単一選択
-    function selectModel(element, modelName) {
-      document.querySelectorAll('#modelGroup .btn').forEach(b => b.classList.remove('selected'));
-      element.classList.add('selected');
-      selectedModelName = modelName;
+    function saveHistoryData() {
+      localStorage.setItem('kousu_vac_historyData', JSON.stringify(historyData));
     }
 
-    function toggleSpecType(element, specType) {
-      element.classList.toggle('selected');
-      if (selectedSpecTypes.includes(specType)) {
-        selectedSpecTypes = selectedSpecTypes.filter(t => t !== specType);
-      } else {
-        selectedSpecTypes.push(specType);
-      }
+    function saveScheduleData() {
+      localStorage.setItem('kousu_vac_scheduleData', JSON.stringify(scheduleData));
+    }
+
+    function selectBtn(groupId, element) {
+      document.querySelectorAll(`#${groupId} .btn`).forEach(btn => btn.classList.remove('active'));
+      element.classList.add('active');
+      checkAllInputsAndMascot();
     }
 
     function selectProcess(element, processName) {
-      document.querySelectorAll('#processGroup .btn').forEach(b => b.classList.remove('selected'));
-      element.classList.add('selected');
-      selectedProcessName = processName;
-
-      const qtyContainer = document.getElementById('qtyContainer');
-      if (processName === '加工' || processName === '整備') {
-        qtyContainer.style.display = 'block';
-      } else {
-        qtyContainer.style.display = 'none';
-      }
-
-      document.getElementById('manageArea').style.display = 'block';
-      renderOptions();
+      selectBtn('process-group', element);
+      currentProcess = processName;
+      renderDetailSection();
+      checkAllInputsAndMascot();
     }
 
-    function toggleCustomQty(val) {
-      const customInput = document.getElementById('customQtyInput');
-      if (val === 'custom') {
+    function checkAllInputsAndMascot() {
+      if (timerInterval) return;
+
+      const model = document.querySelector('#model-group .btn.active');
+      const spec = document.querySelector('#spec-group .btn.active');
+      const process = document.querySelector('#process-group .btn.active');
+      const item = document.getElementById('detail-item').value;
+      
+      let countSelect = document.getElementById('item-count').value;
+      let customCount = document.getElementById('custom-count').value;
+      let countValid = countSelect === 'custom' ? (customCount && customCount > 0) : !!countSelect;
+
+      if (model && spec && process && item && countValid) {
+        const icon = (mascotConfig[currentProcess] || mascotConfig['default']).icon;
+        updateMascot('default', '準備OK！スタートを押してね！', icon);
+      } else {
+        updateMascot('default', '必須項目を選択してください', '⚠️');
+      }
+    }
+
+    function updateMascot(state, customText, customIcon) {
+      const iconEl = document.getElementById('mascot-icon');
+      const textEl = document.getElementById('mascot-text');
+
+      if (state === 'running') {
+        const config = mascotConfig[currentProcess] || mascotConfig['default'];
+        iconEl.textContent = config.icon;
+        textEl.textContent = customText || config.text;
+        iconEl.classList.add('mascot-animating');
+      } else if (state === 'stopped') {
+        iconEl.textContent = '🐟💤';
+        textEl.textContent = 'ぷくぷく…（一時休止中）';
+        iconEl.classList.remove('mascot-animating');
+      } else if (state === 'finished') {
+        iconEl.textContent = '🐋🎉';
+        textEl.textContent = 'お疲れ様！ナイス作業！';
+        iconEl.classList.remove('mascot-animating');
+      } else {
+        iconEl.textContent = customIcon || '🐟';
+        textEl.textContent = customText || '準備OK！スタートを押してね！';
+        iconEl.classList.remove('mascot-animating');
+      }
+    }
+
+    function get15MinMessage(currentSec) {
+      const minutes = Math.floor(currentSec / 60);
+      const msgList = intervalMessages15[currentProcess] || intervalMessages15['default'];
+      const index = Math.min(Math.floor(minutes / 15) - 1, msgList.length - 1);
+      return msgList[index] || `${minutes}分経過！その調子でファイト！`;
+    }
+
+    function renderDetailSection() {
+      updateDetailDropdown();
+      renderManageList();
+    }
+
+    function updateDetailDropdown() {
+      const detailSelect = document.getElementById('detail-item');
+      detailSelect.innerHTML = '';
+      
+      if (!currentProcess) {
+        detailSelect.innerHTML = '<option value="">-- 先に工程を選択してください --</option>';
+        return;
+      }
+
+      const items = detailOptions[currentProcess] || [];
+      if (items.length === 0) {
+        detailSelect.innerHTML = '<option value="">-- 作業項目がありません --</option>';
+        return;
+      }
+
+      detailSelect.innerHTML = '<option value="">-- 作業項目を選択 --</option>';
+      items.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item;
+        opt.textContent = item;
+        detailSelect.appendChild(opt);
+      });
+    }
+
+    function renderManageList() {
+      const container = document.getElementById('item-manage-list');
+      container.innerHTML = '';
+
+      if (!currentProcess) return;
+
+      const items = detailOptions[currentProcess] || [];
+      items.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'item-manage-row';
+        row.innerHTML = `
+          <input type="text" id="edit-item-${index}" value="${item}">
+          <button class="btn-item-save" onclick="saveItemInline(${index})">保存</button>
+          <button class="btn-item-del" onclick="deleteItemInline(${index})">削除</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function addItemInline() {
+      if (!currentProcess) {
+        alert('先に工程を選択してください！');
+        return;
+      }
+      const input = document.getElementById('new-item-input');
+      const val = input.value.trim();
+      if (!val) {
+        alert('新しい項目名を入力してください。');
+        return;
+      }
+
+      if (!detailOptions[currentProcess]) detailOptions[currentProcess] = [];
+      detailOptions[currentProcess].push(val);
+      saveDetailOptions();
+      
+      input.value = '';
+      renderDetailSection();
+      document.getElementById('detail-item').value = val;
+      checkAllInputsAndMascot();
+    }
+
+    function saveItemInline(index) {
+      const input = document.getElementById(`edit-item-${index}`);
+      const newVal = input.value.trim();
+      if (!newVal) {
+        alert('項目名を入力してください。');
+        return;
+      }
+
+      detailOptions[currentProcess][index] = newVal;
+      saveDetailOptions();
+      renderDetailSection();
+      alert('変更を保存しました！');
+    }
+
+    function deleteItemInline(index) {
+      const targetName = detailOptions[currentProcess][index];
+      if (confirm(`「${targetName}」を削除してもよろしいですか？`)) {
+        detailOptions[currentProcess].splice(index, 1);
+        saveDetailOptions();
+        renderDetailSection();
+        checkAllInputsAndMascot();
+      }
+    }
+
+    function toggleCustomCount(select) {
+      const customInput = document.getElementById('custom-count');
+      if (select.value === 'custom') {
         customInput.style.display = 'block';
       } else {
         customInput.style.display = 'none';
       }
     }
 
-    function renderOptions() {
-      if (!selectedProcessName) return;
+    function validateInputs() {
+      const model = document.querySelector('#model-group .btn.active');
+      const spec = document.querySelector('#spec-group .btn.active');
+      const process = document.querySelector('#process-group .btn.active');
+      const item = document.getElementById('detail-item').value;
+      
+      let countSelect = document.getElementById('item-count').value;
+      let customCount = document.getElementById('custom-count').value;
+      let countValid = countSelect === 'custom' ? (customCount && customCount > 0) : !!countSelect;
 
-      const boxList = document.getElementById('optionCheckboxList');
-      const editList = document.getElementById('optionEditList');
-      const list = optionsData[selectedProcessName] || [];
+      if (!model) { alert('【必須】機種を選択してください。'); return false; }
+      if (!spec) { alert('【必須】仕様区分を選択してください。'); return false; }
+      if (!process) { alert('【必須】工程を選択してください。'); return false; }
+      if (!item) { alert('【必須】作業項目を選択してください。'); return false; }
+      if (!countValid) { alert('【必須】個数を正しく入力してください。'); return false; }
 
-      boxList.innerHTML = '';
-      if (list.length === 0) {
-        boxList.innerHTML = '<span style="color: #a0aec0; font-size: 0.85rem;">項目がありません。下から追加してください。</span>';
-      } else {
-        list.forEach((opt) => {
-          const label = document.createElement('label');
-          label.className = 'checkbox-item';
-          label.innerHTML = `
-            <input type="checkbox" value="${opt}" class="option-checkbox">
-            ${opt}
-          `;
-          boxList.appendChild(label);
-        });
-      }
-
-      editList.innerHTML = '';
-      list.forEach((opt, index) => {
-        const div = document.createElement('div');
-        div.className = 'option-item';
-        div.innerHTML = `
-          <input type="text" value="${opt}" id="edit-opt-${index}">
-          <button class="btn-sm btn-edit" onclick="updateOption(${index})">保存</button>
-          <button class="btn-sm btn-del" onclick="deleteOption(${index})">削除</button>
-        `;
-        editList.appendChild(div);
-      });
+      return true;
     }
 
-    function getSelectedOptions() {
-      const checkboxes = document.querySelectorAll('.option-checkbox:checked');
-      return Array.from(checkboxes).map(cb => cb.value);
-    }
+    function importExcel(input) {
+      const file = input.files[0];
+      if (!file) return;
 
-    function addOption() {
-      const input = document.getElementById('newOptionInput');
-      const val = input.value.trim();
-      if (!val || !selectedProcessName) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
 
-      if (!optionsData[selectedProcessName]) {
-        optionsData[selectedProcessName] = [];
-      }
-      optionsData[selectedProcessName].push(val);
-      input.value = '';
-      renderOptions();
-    }
+          const hiddenRows = (worksheet['!rows'] || []).map(r => r && r.hidden);
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          scheduleData = [];
+          const seenSet = new Set();
 
-    function updateOption(index) {
-      const input = document.getElementById(`edit-opt-${index}`);
-      const val = input.value.trim();
-      if (!val || !selectedProcessName) return;
+          let jobColIndex = -1;
+          let startRow = -1;
 
-      optionsData[selectedProcessName][index] = val;
-      renderOptions();
-    }
+          for (let r = 0; r < jsonData.length; r++) {
+            const row = jsonData[r];
+            if (!row) continue;
+            for (let c = 0; c < row.length; c++) {
+              if (row[c] && String(row[c]).includes('仕事番号')) {
+                jobColIndex = c;
+                startRow = r + 1;
+                break;
+              }
+            }
+            if (jobColIndex !== -1) break;
+          }
 
-    function deleteOption(index) {
-      if (!selectedProcessName) return;
-      optionsData[selectedProcessName].splice(index, 1);
-      renderOptions();
-    }
+          if (jobColIndex === -1) jobColIndex = 2;
+          if (startRow === -1) startRow = 3;
 
-    function formatTime(sec) {
-      const hrs = String(Math.floor(sec / 3600)).padStart(2, '0');
-      const mins = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
-      const secs = String(sec % 60).padStart(2, '0');
-      return `${hrs}:${mins}:${secs}`;
-    }
+          for (let i = startRow; i < jsonData.length; i++) {
+            if (hiddenRows[i]) continue;
 
-    function updateDisplay() {
-      document.getElementById('display').textContent = formatTime(seconds);
-    }
+            const row = jsonData[i];
+            if (!row) continue;
+            const jobNo = row[jobColIndex] ? String(row[jobColIndex]).trim() : '';
 
-    function startTimer() {
-      if (!isRunning) {
-        const missing = [];
-        const selectedOpts = getSelectedOptions();
+            if (jobNo) {
+              if (!seenSet.has(jobNo)) {
+                seenSet.add(jobNo);
+                scheduleData.push({ jobNo });
+              }
+            }
+          }
 
-        if (!selectedModelName) missing.push("1. 機種 (101 / 201 / 301)");
-        if (selectedSpecTypes.length === 0) missing.push("2. 仕様区分 (1つ以上選択)");
-        if (!selectedProcessName) missing.push("3. 工程");
-        if (selectedOpts.length === 0) missing.push("4. 作業項目 (1つ以上チェック)");
+          if (scheduleData.length === 0) {
+            alert('仕事番号が見つかりませんでした。');
+            return;
+          }
 
-        if (missing.length > 0) {
-          alert("計測を開始するには、以下の項目をすべて選択・入力してください：\n\n・" + missing.join("\n・"));
-          return;
+          saveScheduleData();
+          renderJobSelect();
+          alert(`${scheduleData.length} 件の仕事番号を読み込みました！`);
+        } catch (err) {
+          console.error(err);
+          alert('ファイルの読み込みに失敗しました。');
         }
-
-        isRunning = true;
-        timer = setInterval(() => {
-          seconds++;
-          updateDisplay();
-        }, 1000);
-
-        document.getElementById('startBtn').disabled = true;
-        document.getElementById('pauseBtn').disabled = false;
-        document.getElementById('stopBtn').disabled = false;
-      }
+      };
+      reader.readAsArrayBuffer(file);
     }
 
-    function pauseTimer() {
-      if (isRunning) {
-        isRunning = false;
-        clearInterval(timer);
-
-        document.getElementById('startBtn').disabled = false;
-        document.getElementById('startBtn').textContent = '再開';
-        document.getElementById('pauseBtn').disabled = true;
-      }
-    }
-
-    function stopTimer() {
-      isRunning = false;
-      clearInterval(timer);
-
-      const model = selectedModelName;
-      const specTypes = [...selectedSpecTypes];
-      const process = selectedProcessName;
-      const selectedOpts = getSelectedOptions();
-
-      let qty = "-";
-      if (process === '加工' || process === '整備') {
-        const qtyVal = document.getElementById('qtySelect').value;
-        if (qtyVal === 'custom') {
-          qty = (document.getElementById('customQtyInput').value || "1") + "個";
-        } else {
-          qty = qtyVal + "個";
-        }
-      }
-
-      timerRecords.push({
-        model: model,
-        specTypesArray: specTypes,
-        process: process,
-        option: selectedOpts.join('・'),
-        qty: qty,
-        duration: seconds,
-        timeStr: formatTime(seconds)
-      });
-
-      saveToStorage();
-      renderSummaryTable();
-
-      seconds = 0;
-      updateDisplay();
-      document.getElementById('startBtn').disabled = false;
-      document.getElementById('startBtn').textContent = 'スタート';
-      document.getElementById('pauseBtn').disabled = true;
-      document.getElementById('stopBtn').disabled = true;
-    }
-
-    function renderSummaryTable() {
-      const tbody = document.getElementById('summaryTableBody');
-      tbody.innerHTML = '';
-
-      let secStandard = 0;
-      let secOption = 0;
-      let secExtra = 0;
-
-      if (timerRecords.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#a0aec0;">計測データはまだありません</td></tr>';
-      } else {
-        timerRecords.slice().reverse().forEach(item => {
-          const arr = item.specTypesArray || [];
-          const isStd = arr.includes('標準');
-          const isOpt = arr.includes('オプション');
-          const isExt = arr.includes('付加仕様');
-
-          const stdText = isStd ? item.timeStr : "-";
-          const optText = isOpt ? item.timeStr : "-";
-          const extText = isExt ? item.timeStr : "-";
-
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${item.model}</td>
-            <td>${item.process}</td>
-            <td><strong>${item.option}</strong></td>
-            <td>${item.qty}</td>
-            <td style="color: ${isStd ? '#2b6cb0' : '#a0aec0'};">${stdText}</td>
-            <td style="color: ${isOpt ? '#2b6cb0' : '#a0aec0'};">${optText}</td>
-            <td style="color: ${isExt ? '#2b6cb0' : '#a0aec0'};">${extText}</td>
-            <td><strong>${item.timeStr}</strong></td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-        timerRecords.forEach(item => {
-          const arr = item.specTypesArray || [];
-          if (arr.includes('標準')) secStandard += item.duration;
-          if (arr.includes('オプション')) secOption += item.duration;
-          if (arr.includes('付加仕様')) secExtra += item.duration;
-        });
-      }
-
-      document.getElementById('totalStandard').textContent = formatTime(secStandard);
-      document.getElementById('totalOption').textContent = formatTime(secOption);
-      document.getElementById('totalExtra').textContent = formatTime(secExtra);
-    }
-
-    function exportCSV() {
-      if (timerRecords.length === 0) {
-        alert("保存するデータがありません");
+    function renderJobSelect() {
+      const select = document.getElementById('job-select');
+      select.innerHTML = '';
+      
+      if (scheduleData.length === 0) {
+        select.innerHTML = '<option value="">-- 先に工程表ファイルを読み込んでください --</option>';
+        currentJobNo = '';
         return;
       }
 
-      let secStandard = 0;
-      let secOption = 0;
-      let secExtra = 0;
-
-      timerRecords.forEach(item => {
-        const arr = item.specTypesArray || [];
-        if (arr.includes('標準')) secStandard += item.duration;
-        if (arr.includes('オプション')) secOption += item.duration;
-        if (arr.includes('付加仕様')) secExtra += item.duration;
+      select.innerHTML = '<option value="">-- 仕事番号を選択してください --</option>';
+      scheduleData.forEach((data, index) => {
+        const opt = document.createElement('option');
+        opt.value = index;
+        opt.textContent = data.jobNo;
+        select.appendChild(opt);
       });
-
-      let csvContent = "\uFEFF【VAC 個別計測履歴】\n";
-      csvContent += "機種,工程,作業項目,個数,標準時間,オプション時間,付加仕様時間,計測時間\n";
-      timerRecords.forEach(item => {
-        const arr = item.specTypesArray || [];
-        const stdText = arr.includes('標準') ? item.timeStr : "";
-        const optText = arr.includes('オプション') ? item.timeStr : "";
-        const extText = arr.includes('付加仕様') ? item.timeStr : "";
-
-        csvContent += `"${item.model}","${item.process}","${item.option}","${item.qty}","${stdText}","${optText}","${extText}","${item.timeStr}"\n`;
-      });
-
-      csvContent += "\n【仕様区分別 合計時間】\n";
-      csvContent += "仕様区分,合計作業時間\n";
-      csvContent += `"標準","${formatTime(secStandard)}"\n`;
-      csvContent += `"オプション","${formatTime(secOption)}"\n`;
-      csvContent += `"付加仕様","${formatTime(secExtra)}"\n`;
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `VAC工数記録_${new Date().toISOString().slice(0,10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
     }
 
-    function clearSummaryData() {
-      if (confirm("これまでの計測結果データ（履歴と合計）をすべてリセットしてもよろしいですか？")) {
-        timerRecords = [];
-        localStorage.removeItem('vac_timer_records_v1');
-        renderSummaryTable();
+    function clearJobScheduleData() {
+      if (scheduleData.length === 0) {
+        alert('削除する仕事番号データはありません。');
+        return;
+      }
+      if (confirm('読み込んだ仕事番号のリストをクリアしてもよろしいですか？')) {
+        scheduleData = [];
+        currentJobNo = '';
+        localStorage.removeItem('kousu_vac_scheduleData');
+        renderJobSelect();
+        closeVoiceSettings();
+        alert('仕事番号リストを消去しました！');
+      }
+    }
+
+    function autoSelectJob() {
+      const index = document.getElementById('job-select').value;
+      if (index === '') {
+        currentJobNo = '';
+        return;
+      }
+      const data = scheduleData[index];
+      currentJobNo = data.jobNo;
+      checkAllInputsAndMascot();
+    }
+
+    function formatTime(s) {
+      const hrs = String(Math.floor(s / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+      const secs = String(s % 60).padStart(2, '0');
+      return `${hrs}:${mins}:${secs}`;
+    }
+
+    function startTimer() {
+      if (!validateInputs()) return;
+      if (timerInterval) return;
+
+      const startMsg = (mascotConfig[currentProcess] || mascotConfig['default']).text;
+      cheerNotice(startMsg);
+
+      document.getElementById('start-btn').style.background = '#10b981';
+      document.getElementById('stop-btn').style.background = '#ef4444';
+      document.getElementById('stop-btn').style.color = '#fff';
+      document.getElementById('finish-btn').style.background = '#3b82f6';
+      document.getElementById('finish-btn').style.color = '#fff';
+
+      updateMascot('running');
+
+      timerInterval = setInterval(() => {
+        seconds++;
+        document.getElementById('timer').textContent = formatTime(seconds);
+
+        if (seconds > 0 && seconds % 900 === 0) {
+          const newMsg = get15MinMessage(seconds);
+          updateMascot('running', newMsg);
+          cheerNotice(newMsg);
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (!timerInterval) return;
+      clearInterval(timerInterval);
+      timerInterval = null;
+      speakText('一時停止しました');
+      updateMascot('stopped');
+    }
+
+    function finishTimer() {
+      if (seconds === 0) return;
+      if (!validateInputs()) return;
+      
+      clearInterval(timerInterval);
+      timerInterval = null;
+
+      cheerNotice('お疲れ様でした！作業完了です！');
+
+      const model = document.querySelector('#model-group .btn.active').textContent;
+      const spec = document.querySelector('#spec-group .btn.active').textContent;
+      const process = document.querySelector('#process-group .btn.active').textContent;
+      const item = document.getElementById('detail-item').value;
+      
+      let countSelect = document.getElementById('item-count').value;
+      let count = countSelect === 'custom' ? document.getElementById('custom-count').value : countSelect;
+
+      historyData.push({ 
+        jobNo: currentJobNo || '未設定', 
+        model, 
+        spec, 
+        process, 
+        item, 
+        count, 
+        timeSec: seconds, 
+        timeStr: formatTime(seconds) 
+      });
+      
+      saveHistoryData();
+      updateHistoryTable();
+      updateSummary();
+
+      updateMascot('finished');
+
+      seconds = 0;
+      document.getElementById('timer').textContent = '00:00:00';
+      
+      setTimeout(() => {
+        checkAllInputsAndMascot();
+      }, 3000);
+    }
+
+    function copyToClipboard(text) {
+      if (text === '未設定' || !text) {
+        alert('仕事番号が設定されていません。');
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        alert(`仕事番号 「${text}」 をコピーしました！\nManageクラウド画面で Ctrl+V で貼り付けできます。`);
+      });
+    }
+
+    function copyAllDataToClipboard() {
+      if (historyData.length === 0) {
+        alert('コピーするデータがありません。');
+        return;
+      }
+
+      let text = '仕事番号,機種,区分,工程,作業項目,個数,時間\n';
+      historyData.forEach(r => {
+        text += `${r.jobNo},${r.model},${r.spec},${r.process},${r.item},${r.count},${r.timeStr}\n`;
+      });
+
+      navigator.clipboard.writeText(text).then(() => {
+        alert('計測結果（全件）をコピーしました！\n他の画面で Ctrl+V でそのまま貼り付けできます。');
+      });
+    }
+
+    function updateHistoryTable() {
+      const tbody = document.getElementById('history-list');
+      tbody.innerHTML = '';
+      if (historyData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:#94a3b8;">計測データはまだありません</td></tr>';
+        return;
+      }
+      historyData.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight:bold;">${row.jobNo}</td>
+          <td>${row.model} / ${row.spec} / ${row.process}</td>
+          <td>${row.item} (${row.count}個)</td>
+          <td>${row.timeStr}</td>
+          <td><button class="btn-copy" onclick="copyToClipboard('${row.jobNo}')">📋 番号コピー</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateSummary() {
+      let sums = { '標準': 0, 'オプション': 0, '付加仕様': 0 };
+      historyData.forEach(row => {
+        if (sums[row.spec] !== undefined) {
+          sums[row.spec] += row.timeSec;
+        }
+      });
+      document.getElementById('sum-standard').textContent = formatTime(sums['標準']);
+      document.getElementById('sum-option').textContent = formatTime(sums['オプション']);
+      document.getElementById('sum-extra').textContent = formatTime(sums['付加仕様']);
+    }
+
+    function exportCSV() {
+      if (historyData.length === 0) {
+        alert('保存するデータがありません。');
+        return;
+      }
+      
+      let csv = '仕事番号,機種,区分,工程,作業項目,個数,時間\n';
+      historyData.forEach(r => {
+        csv += `${r.jobNo},${r.model},${r.spec},${r.process},${r.item},${r.count},${r.timeStr}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `VAC工数計測結果_${new Date().toISOString().slice(0,10)}.csv`;
+      link.click();
+    }
+
+    function resetAllData() {
+      if (confirm('保存されている計測データと履歴をすべて消去しますか？（追加・編集した作業項目は残ります）')) {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = null;
+        seconds = 0;
+        historyData = [];
+        localStorage.removeItem('kousu_vac_historyData');
+        document.getElementById('timer').textContent = '00:00:00';
+        updateHistoryTable();
+        updateSummary();
+        checkAllInputsAndMascot();
       }
     }
   </script>
