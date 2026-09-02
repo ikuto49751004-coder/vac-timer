@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>工数計測アプリ (VAC用)</title>
-  <!-- Excel(.xlsx)ファイルをそのまま読み込むための外部ライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #e0f2fe; margin: 0; padding: 15px; color: #333; }
@@ -101,23 +100,20 @@
 </head>
 <body>
 
-  <!-- トップヘッダー -->
   <div class="header-bar">
     <h2 class="header-title">工数計測アプリ (VAC用)</h2>
     <button class="btn-settings-icon" onclick="openVoiceSettings()" title="設定">⚙️</button>
   </div>
 
-  <!-- 0. 仕事番号選択 -->
   <div class="card">
     <h3>0. 仕事番号（製番）を選択</h3>
     <input type="file" id="excel-input" accept=".xlsx, .xls, .csv" style="display:none;" onchange="importExcel(this)">
-    <button class="btn-file" onclick="document.getElementById('excel-input').click()">📁 工程表(Excel/CSV)を読み込み</button>
+    <button class="btn-file" onclick="document.getElementById('excel-input').click()">📁 工程表(Excel/CSV)を読み込み (※3035・1035のみ抽出)</button>
     <select id="job-select" onchange="autoSelectJob()">
       <option value="">-- 先に工程表ファイルを読み込んでください --</option>
     </select>
   </div>
 
-  <!-- 1. 機種を選択 -->
   <div class="card">
     <h3>1. 機種を選択 <span style="color:#ef4444;">*</span></h3>
     <div class="grid-3" id="model-group">
@@ -127,7 +123,6 @@
     </div>
   </div>
 
-  <!-- 2. 仕様区分を選択 -->
   <div class="card">
     <h3>2. 仕様区分を選択 <span style="color:#ef4444;">*</span></h3>
     <div class="grid-3" id="spec-group">
@@ -137,7 +132,6 @@
     </div>
   </div>
 
-  <!-- 3. 工程を選択 (冷凍機を削除) -->
   <div class="card">
     <h3>3. 工程を選択 <span style="color:#ef4444;">*</span></h3>
     <div class="grid-process" id="process-group">
@@ -148,7 +142,6 @@
     </div>
   </div>
 
-  <!-- 4. 詳細項目・個数を設定 -->
   <div class="card">
     <h3>4. 詳細項目・個数を設定</h3>
     <div class="field-group">
@@ -189,7 +182,6 @@
     </details>
   </div>
 
-  <!-- タイマーカード -->
   <div class="card">
     <div class="mascot-box">
       <span class="mascot-icon" id="mascot-icon">⚠️</span>
@@ -209,7 +201,6 @@
     </div>
   </div>
 
-  <!-- 5. 合計時間 & 履歴カード -->
   <div class="card">
     <h3>⏱ 仕様区分ごとの合計時間</h3>
     <div class="summary-grid">
@@ -244,7 +235,6 @@
     </table>
   </div>
 
-  <!-- 設定用 モーダル画面 -->
   <div class="modal-backdrop" id="voice-modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -252,7 +242,6 @@
         <button class="btn-modal-close" onclick="closeVoiceSettings()">✖</button>
       </div>
 
-      <!-- 音声設定 -->
       <div class="setting-section" style="border-top:none; padding-top:0;">
         <div class="setting-section-title">🔊 応援音声の設定</div>
         <div class="voice-control-group">
@@ -268,7 +257,6 @@
         </div>
       </div>
 
-      <!-- 仕事番号データ管理 -->
       <div class="setting-section">
         <div class="setting-section-title">📁 仕事番号データの管理</div>
         <button class="btn-clear-jobs" onclick="clearJobScheduleData()">🗑 読み込み済みの仕事番号を全削除</button>
@@ -684,7 +672,8 @@
             const jobNo = row[jobColIndex] ? String(row[jobColIndex]).trim() : '';
 
             if (jobNo) {
-              if (!seenSet.has(jobNo)) {
+              // 「3035」または「1035」が含まれているものだけを対象とする
+              if ((jobNo.includes('3035') || jobNo.includes('1035')) && !seenSet.has(jobNo)) {
                 seenSet.add(jobNo);
                 scheduleData.push({ jobNo });
               }
@@ -692,13 +681,13 @@
           }
 
           if (scheduleData.length === 0) {
-            alert('仕事番号が見つかりませんでした。');
+            alert('条件（3035 または 1035）に一致する仕事番号が見つかりませんでした。');
             return;
           }
 
           saveScheduleData();
           renderJobSelect();
-          alert(`${scheduleData.length} 件の仕事番号を読み込みました！`);
+          alert(`${scheduleData.length} 件の対象仕事番号（3035 / 1035）を読み込みました！`);
         } catch (err) {
           console.error(err);
           alert('ファイルの読み込みに失敗しました。');
